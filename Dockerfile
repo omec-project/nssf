@@ -42,5 +42,3 @@ RUN mkdir -p nssf/
 # Copy executable and default certs
 COPY --from=builder /go/src/nssf/bin/* ./nssf
 WORKDIR /free5gc/nssf
-# Exposed ports
-EXPOSE 29531
