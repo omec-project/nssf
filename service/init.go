@@ -16,6 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
+	gServ "github.com/badhrinathpa/nssf/proto/server"
 	"github.com/free5gc/http2_util"
 	"github.com/free5gc/logger_util"
 	"github.com/free5gc/nssf/consumer"
@@ -187,6 +188,9 @@ func (nssf *NSSF) Start() {
 		os.Exit(0)
 	}()
 
+	var host string = "0.0.0.0:9876"
+	confServ := &gServ.ConfigServer{}
+	go gServ.StartServer(host, confServ)
 	server, err := http2_util.NewServer(addr, util.NSSF_LOG_PATH, router)
 
 	if server == nil {
