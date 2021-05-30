@@ -20,4 +20,6 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/urfave/cli v1.22.5
 	gopkg.in/yaml.v2 v2.4.0
+    github.com/fsnotify/fsnotify v1.4.7
+    github.com/spf13/viper v1.7.1
 )
