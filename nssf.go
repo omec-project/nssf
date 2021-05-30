@@ -49,6 +49,8 @@ func action(c *cli.Context) error {
 		return fmt.Errorf("Failed to initialize !!")
 	}
 
+	NSSF.WatchConfig()
+
 	NSSF.Start()
 
 	return nil
