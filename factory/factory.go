@@ -42,7 +42,7 @@ func InitConfigFactory(f string) error {
 	return nil
 }
 
-func UpdateAmfConfig(f string) error {
+func UpdateNssfConfig(f string) error {
 	if content, err := ioutil.ReadFile(f); err != nil {
 		return err
 	} else {

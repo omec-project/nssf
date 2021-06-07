@@ -102,7 +102,7 @@ func (amf *NSSF) WatchConfig() {
 	viper.WatchConfig()
 	viper.OnConfigChange(func(e fsnotify.Event) {
 		fmt.Println("Config file changed:", e.Name)
-		if err := factory.UpdateAmfConfig("/free5gc/config/nssfcfg.conf"); err != nil {
+		if err := factory.UpdateNssfConfig(e.Name + "/nssfcfg.conf"); err != nil {
 			fmt.Println("error in loading updated configuration")
 		} else {
 			fmt.Println("successfully updated configuration")
