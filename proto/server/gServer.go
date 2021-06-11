@@ -2,7 +2,7 @@ package server
 
 import (
 	context "context"
-	protos "github.com/badhrinathpa/nssf/proto/omec5gconfig"
+	protos "github.com/omec-project/nssf/proto/omec5gconfig"
 	"google.golang.org/grpc"
 	"log"
 	"net"

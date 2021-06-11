@@ -16,7 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
-	gServ "github.com/badhrinathpa/nssf/proto/server"
+	gServ "github.com/omec-project/nssf/proto/server"
 	"github.com/free5gc/http2_util"
 	"github.com/free5gc/logger_util"
 	"github.com/free5gc/nssf/consumer"

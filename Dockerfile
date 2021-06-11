@@ -47,7 +47,6 @@ RUN cd $GOPATH/src/nssf/proto \
     && protoc --go_out=plugins=grpc:. config.proto
 
 RUN cd $GOPATH/src/nssf \
-    && go mod vendor \
     && make all
 
 FROM alpine:3.8 as nssf
