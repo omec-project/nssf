@@ -2,10 +2,12 @@ package server
 
 import (
 	context "context"
-	protos "github.com/omec-project/nssf/proto/omec5gconfig"
+	protos "github.com/omec-project/nssf/proto/sdcoreConfig"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
 	"log"
 	"net"
+	"time"
 )
 
 type PlmnId struct {
@@ -42,6 +44,16 @@ type ConfigServer struct {
 	Version   uint32
 }
 
+var kaep = keepalive.EnforcementPolicy{
+	MinTime:             15 * time.Second, // If a client pings more than once every 5 seconds, terminate the connection
+	PermitWithoutStream: true,             // Allow pings even when there are no active streams
+}
+
+var kasp = keepalive.ServerParameters{
+	Time:    30 * time.Second, // Ping the client if it is idle for 5 seconds to ensure the connection is still active
+	Timeout: 5 * time.Second,  // Wait 1 second for the ping ack before assuming the connection is dead
+}
+
 func StartServer(host string, confServ *ConfigServer) {
 	log.Println("start config server")
 	lis, err := net.Listen("tcp", host)
@@ -49,7 +61,7 @@ func StartServer(host string, confServ *ConfigServer) {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(grpc.KeepaliveEnforcementPolicy(kaep), grpc.KeepaliveParams(kasp))
 	protos.RegisterConfigServiceServer(grpcServer, confServ)
 	if err = grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
