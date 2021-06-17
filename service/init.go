@@ -16,7 +16,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
-	gServ "github.com/omec-project/nssf/proto/server"
 	"github.com/free5gc/http2_util"
 	"github.com/free5gc/logger_util"
 	"github.com/free5gc/nssf/consumer"
@@ -29,6 +28,7 @@ import (
 	openApiLogger "github.com/free5gc/openapi/logger"
 	"github.com/free5gc/path_util"
 	pathUtilLogger "github.com/free5gc/path_util/logger"
+	gServ "github.com/omec-project/nssf/proto/server"
 )
 
 type NSSF struct{}
