@@ -35,5 +35,5 @@ contain the messages and methods to be used by the server and client :
     config.pb.go
     config_grpc.pb.go
 
-The gServer.go file under server folder is not a generated file. It exposes the
-server APIs to be used by any application which will behave as the grpc server. 
+The gClient.go file under client folder is not a generated file. It exposes the
+client APIs to be used by any application which will behave as the grpc client. 
