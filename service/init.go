@@ -12,13 +12,11 @@ package service
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"os/signal"
 	"sync"
 	"syscall"
-	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -36,7 +34,6 @@ import (
 	"github.com/free5gc/path_util"
 	pathUtilLogger "github.com/free5gc/path_util/logger"
 	gClient "github.com/omec-project/nssf/proto/client"
-	"google.golang.org/grpc/connectivity"
 )
 
 type NSSF struct{}
@@ -167,49 +164,6 @@ func (nssf *NSSF) FilterCli(c *cli.Context) (args []string) {
 	return args
 }
 
-func getConfigClient() (*gClient.ConfigClient, error) {
-	//var confClient *gClient.ConfigClient
-	confClient, err := gClient.CreateChannel("webui:9876", 10000)
-	if err != nil {
-		log.Println("create grpc channel to config pod failed. : ", err)
-		return nil, err
-	}
-
-	return confClient, nil
-}
-
-func readConfigInLoop(confClient *gClient.ConfigClient) {
-	connReady := make(chan bool)
-	go func() {
-		for {
-			status := confClient.Conn.GetState()
-			if status == connectivity.Ready {
-				connReady <- true
-			}
-		}
-	}()
-
-	configReadTimeout := time.NewTicker(5000 * time.Millisecond)
-	for {
-		select {
-		case <-configReadTimeout.C:
-			select {
-			case ok := <-connReady:
-				if ok {
-					var cResp gClient.ConfigResp
-					err := confClient.ReadConfig(&cResp)
-					if err != nil {
-						log.Println("read config from webconsole failed : ", err)
-						continue
-					}
-				}
-			default:
-				log.Println("client connection not ready")
-			}
-		}
-	}
-}
-
 func (nssf *NSSF) Start() {
 	initLog.Infoln("Server started")
 
@@ -239,13 +193,8 @@ func (nssf *NSSF) Start() {
 		os.Exit(0)
 	}()
 
-	//var host string = "0.0.0.0:9876"
-	//confServ := &gServ.ConfigServer{}
-	//go gServ.StartServer(host, confServ)
-	confClient, err := getConfigClient()
-	if err == nil {
-		go readConfigInLoop(confClient)
-	}
+	go gClient.ConfigWatcher()
+
 	server, err := http2_util.NewServer(addr, util.NSSF_LOG_PATH, router)
 
 	if server == nil {
