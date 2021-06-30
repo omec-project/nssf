@@ -17,6 +17,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/free5gc/nssf/logger"
+	gClient "github.com/omec-project/nssf/proto/client"
 )
 
 var (
@@ -41,6 +42,9 @@ func InitConfigFactory(f string) error {
 		}
 
 		Configured = true
+		commChannel := gClient.ConfigWatcher()
+		go NssfConfig.updateConfig(commChannel)
+
 	}
 
 	return nil

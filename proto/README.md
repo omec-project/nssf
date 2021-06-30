@@ -14,8 +14,8 @@ command :
 The Dockerfile contains the commands to generate the golang files from this config.proto. 
 The commands are as follows : 
 
-    protoc -I ./ --go_out=. config.proto // This generates the messages
-    protoc -I ./ --go-grpc_out=. config.proto // This generates the services
+    protoc -I ./ --go_out=. config.proto # This generates the messages
+    protoc -I ./ --go-grpc_out=. config.proto # This generates the services
 
 To run the above commands, we install the protoc compiler and the protobuf go
 based plugin. The commands for installing are as follows : 

@@ -94,4 +94,5 @@ message NetworkSliceRequest {
 message NetworkSliceResponse {
   uint32  RestartCounter = 1;
   repeated NetworkSlice NetworkSlice = 2;
+  uint32  ConfigUpdated = 3;
 }

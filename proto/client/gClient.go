@@ -42,16 +42,17 @@ type ConfigClient struct {
 	Version string
 }
 
-func ConfigWatcher() {
+func ConfigWatcher() chan *protos.NetworkSliceResponse {
 	//var confClient *gClient.ConfigClient
     //TODO: use port from configmap. 
 	confClient, err := CreateChannel("webui:9876", 10000)
 	if err != nil {
 		logger.GrpcLog.Errorf("create grpc channel to config pod failed. : ", err)
-		return
+		return nil
 	}
-	readConfigInLoop(confClient)
-	return
+	commChan := make(chan *protos.NetworkSliceResponse)
+	go readConfigInLoop(confClient, commChan)
+	return commChan
 }
 
 func CreateChannel(host string, timeout uint32) (*ConfigClient, error) {
@@ -91,7 +92,7 @@ var retryPolicy = `{
 
 func GetConnection(host string) (conn *grpc.ClientConn, err error) {
 	/* get connection */
-	logger.GrpcLog.Infoln("Dial grpc connection - %v",host)
+	logger.GrpcLog.Infoln("Dial grpc connection - ",host)
 	conn, err = grpc.Dial(host, grpc.WithInsecure(), grpc.WithKeepaliveParams(kacp), grpc.WithDefaultServiceConfig(retryPolicy))
 	if err != nil {
 		logger.GrpcLog.Errorln("grpc dial err: ", err)
@@ -101,21 +102,44 @@ func GetConnection(host string) (conn *grpc.ClientConn, err error) {
 	return conn, err
 }
 
-func readConfigInLoop(confClient *ConfigClient) {
+func readConfigInLoop(confClient *ConfigClient, commChan chan *protos.NetworkSliceResponse) {
+	myid := os.Getenv("HOSTNAME")
 	configReadTimeout := time.NewTicker(5000 * time.Millisecond)
 	for {
 		select {
 		case <-configReadTimeout.C:
 			status := confClient.Conn.GetState()
 			if status == connectivity.Ready {
-				err := confClient.ReadNetworkSliceConfig()
+				rreq := &protos.NetworkSliceRequest{RestartCounter: selfRestartCounter, ClientId: myid}
+				rsp, err := confClient.Client.GetNetworkSlice(context.Background(), rreq)
 				if err != nil {
 					logger.GrpcLog.Errorln("read Network Slice config from webconsole failed : ", err)
 					continue
 				}
+				logger.GrpcLog.Debugf("#Network Slices %v, RC of configpod %v ", len(rsp.NetworkSlice), rsp.RestartCounter)
+				if configPodRestartCounter == 0 || (configPodRestartCounter == rsp.RestartCounter) {
+					// first time connection or config update
+					configPodRestartCounter = rsp.RestartCounter
+					if len(rsp.NetworkSlice) > 0 {
+						// always carries full config copy
+						logger.GrpcLog.Infoln("First time config Received ", rsp)
+						commChan <- rsp
+					} else if rsp.ConfigUpdated == 1 {
+						// config delete , all slices deleted
+						logger.GrpcLog.Infoln("Complete config deleted ")
+						commChan <- rsp
+					}
+				} else if len(rsp.NetworkSlice) > 0 {
+					logger.GrpcLog.Errorf("Config received after config Pod restart")
+					//config received after config pod restart
+					configPodRestartCounter = rsp.RestartCounter
+					commChan <- rsp
+				} else {
+					logger.GrpcLog.Errorf("Config Pod is restarted and no config received")
+				}
 			} else {
 				logger.GrpcLog.Errorln("read Network Slice config from webconsole skipped. GRPC channel down ")
-            }
+			}
 		}
 	}
 }

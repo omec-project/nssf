@@ -12,6 +12,9 @@ package factory
 import (
 	"github.com/free5gc/logger_util"
 	"github.com/free5gc/openapi/models"
+	"github.com/omec-project/nssf/logger"
+    "fmt"
+	protos "github.com/omec-project/nssf/proto/sdcoreConfig"
 )
 
 const (
@@ -99,9 +102,37 @@ type Subscription struct {
 	SubscriptionData *models.NssfEventSubscriptionCreateData `yaml:"subscriptionData"`
 }
 
+var MinConfigAvailable bool = false
+
 func (c *Config) GetVersion() string {
 	if c.Info != nil && c.Info.Version != "" {
 		return c.Info.Version
 	}
 	return ""
+}
+
+func (c *Config) updateConfig(commChannel chan *protos.NetworkSliceResponse) bool {
+	for {
+		select {
+		case rsp := <-commChannel:
+			fmt.Println("Received updateConfig in the nssf app : ", rsp)
+			MinConfigAvailable = true
+			for i := 0; i < len(rsp.NetworkSlice); i++ {
+				ns := rsp.NetworkSlice[i]
+				logger.GrpcLog.Infoln("Network Slice Name ", ns.Name)
+				if ns.Site != nil {
+					logger.GrpcLog.Infoln("Network Slice has site name present ")
+					site := ns.Site
+					logger.GrpcLog.Infoln("Site name ", site.SiteName)
+					if site.Plmn != nil {
+						logger.GrpcLog.Infoln("Plmn mcc ", site.Plmn.Mcc)
+					} else {
+						logger.GrpcLog.Infoln("Plmn not present in the message ")
+					}
+
+				}
+			}
+		}
+	}
+	return true
 }
