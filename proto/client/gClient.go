@@ -7,44 +7,33 @@ package client
 
 import (
 	context "context"
+	"github.com/omec-project/nssf/logger"
 	protos "github.com/omec-project/nssf/proto/sdcoreConfig"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/keepalive"
-	"log"
+	"math/rand"
+	"os"
 	"time"
 )
+
+var selfRestartCounter uint32
+var configPodRestartCounter uint32 = 0
+
+func init() {
+	s1 := rand.NewSource(time.Now().UnixNano())
+	r1 := rand.New(s1)
+	selfRestartCounter = r1.Uint32()
+}
 
 type PlmnId struct {
 	MCC string
 	MNC string
 }
 
-type SupportedPlmnList struct {
-	PlmnIdList []PlmnId
-}
-
 type Nssai struct {
 	sst string
 	sd  string
-}
-
-type SupportedNssaiList struct {
-	NssaiList []Nssai
-}
-
-type SupportedNssaiInPlmnList struct {
-	Plmn       PlmnId
-	SnssaiList SupportedNssaiList
-}
-
-type ConfigReq struct {
-	suppNssaiPlmnList SupportedNssaiInPlmnList
-	SuppPlmnList      SupportedPlmnList
-}
-
-type ConfigResp struct {
-	suppNssaiPlmnList SupportedNssaiInPlmnList
-	SuppPlmnList      SupportedPlmnList
 }
 
 type ConfigClient struct {
@@ -53,12 +42,24 @@ type ConfigClient struct {
 	Version string
 }
 
+func ConfigWatcher() {
+	//var confClient *gClient.ConfigClient
+    //TODO: use port from configmap. 
+	confClient, err := CreateChannel("webui:9876", 10000)
+	if err != nil {
+		logger.GrpcLog.Errorf("create grpc channel to config pod failed. : ", err)
+		return
+	}
+	readConfigInLoop(confClient)
+	return
+}
+
 func CreateChannel(host string, timeout uint32) (*ConfigClient, error) {
-	log.Println("create config client")
+	logger.GrpcLog.Infoln("create config client")
 	// Second, check to see if we can reuse the gRPC connection for a new P4RT client
 	conn, err := GetConnection(host)
 	if err != nil {
-		log.Println("grpc connection failed")
+		logger.GrpcLog.Errorf("grpc connection failed")
 		return nil, err
 	}
 
@@ -90,60 +91,72 @@ var retryPolicy = `{
 
 func GetConnection(host string) (conn *grpc.ClientConn, err error) {
 	/* get connection */
-	log.Println("Get connection.")
+	logger.GrpcLog.Infoln("Dial grpc connection - %v",host)
 	conn, err = grpc.Dial(host, grpc.WithInsecure(), grpc.WithKeepaliveParams(kacp), grpc.WithDefaultServiceConfig(retryPolicy))
 	if err != nil {
-		log.Println("grpc dial err: ", err)
+		logger.GrpcLog.Errorln("grpc dial err: ", err)
 		return nil, err
 	}
 	//defer conn.Close()
 	return conn, err
 }
 
-func (c *ConfigClient) WriteConfig(cReq *ConfigReq) error {
-	log.Println("Write config request")
-	wreq := &protos.WriteRequest{}
-	wcfg := &protos.Config{}
-	wreq.WriteConfig = wcfg
-	suppPlmnList := &protos.SupportedPlmnList{}
-	for _, pl := range cReq.SuppPlmnList.PlmnIdList {
-		log.Println("mcc: ", pl.MCC)
-		log.Println("mnc: ", pl.MNC)
-		plmnId := &protos.PlmnId{
-			Mcc: pl.MCC,
-			Mnc: pl.MNC,
+func readConfigInLoop(confClient *ConfigClient) {
+	configReadTimeout := time.NewTicker(5000 * time.Millisecond)
+	for {
+		select {
+		case <-configReadTimeout.C:
+			status := confClient.Conn.GetState()
+			if status == connectivity.Ready {
+				err := confClient.ReadNetworkSliceConfig()
+				if err != nil {
+					logger.GrpcLog.Errorln("read Network Slice config from webconsole failed : ", err)
+					continue
+				}
+			} else {
+				logger.GrpcLog.Errorln("read Network Slice config from webconsole skipped. GRPC channel down ")
+            }
 		}
-		suppPlmnList.PlmnIds = append(suppPlmnList.PlmnIds, plmnId)
 	}
-	wcfg.SuppPlmnList = suppPlmnList
-	ret, err := c.Client.Write(context.Background(), wreq)
-	if ((ret != nil) && (ret.WriteStatus == protos.Status_FAILURE)) || err != nil {
-		return err
-	}
-
-	return nil
 }
 
-func (c *ConfigClient) ReadConfig(cRes *ConfigResp) error {
-	log.Println("Read request")
-	rreq := &protos.ReadRequest{Version: c.Version}
-	rsp, err := c.Client.Read(context.Background(), rreq)
+func (c *ConfigClient) ReadNetworkSliceConfig() error {
+	logger.GrpcLog.Infoln("ReadNetworkSliceConfig  request")
+	myid := os.Getenv("HOSTNAME")
+	rreq := &protos.NetworkSliceRequest{RestartCounter: selfRestartCounter, ClientId: myid}
+	rsp, err := c.Client.GetNetworkSlice(context.Background(), rreq)
 	if err != nil {
+		logger.GrpcLog.Errorf("GRPC error - GetNetworkSlice %v", err)
 		return err
 	}
-
-	rcfg := rsp.ReadConfig
-	suppPlmnList := rcfg.SuppPlmnList
-	c.Version = rcfg.Version
-	for _, pl := range suppPlmnList.PlmnIds {
-		log.Println("mcc: ", pl.Mcc)
-		log.Println("mnc: ", pl.Mnc)
-		log.Println("version: ", c.Version)
-		plmnId := PlmnId{
-			MCC: pl.GetMcc(),
-			MNC: pl.GetMnc(),
-		}
-		cRes.SuppPlmnList.PlmnIdList = append(cRes.SuppPlmnList.PlmnIdList, plmnId)
-	}
+	logger.GrpcLog.Infof("Number of Network Slices available %v, restart counter  of configpod %v ", len(rsp.NetworkSlice), rsp.RestartCounter)
+    if configPodRestartCounter == 0 || (configPodRestartCounter == rsp.RestartCounter) {
+      // first time connection 
+      configPodRestartCounter = rsp.RestartCounter
+	  for n := 0; n < len(rsp.NetworkSlice); n++ {
+		ns := rsp.NetworkSlice[n]
+		logger.GrpcLog.Infoln("Network Slice Name ", ns.Name)
+        if ns.Site != nil {
+		    logger.GrpcLog.Infoln("Network Slice has site name present ")
+            site := ns.Site
+		    logger.GrpcLog.Infoln("Site name ", site.SiteName)
+            if site.Plmn != nil {
+                plmn := site.Plmn
+		        logger.GrpcLog.Infoln("Plmn mcc ", plmn.Mcc)
+            } else {
+		        logger.GrpcLog.Infoln("Plmn not present in the message ")
+            }
+        }
+	  }
+    } else if len(rsp.NetworkSlice) > 0 {
+      // Config copy Received after Config Pod has restarted
+      configPodRestartCounter = rsp.RestartCounter
+	  for n := 0; n < len(rsp.NetworkSlice); n++ {
+		ns := rsp.NetworkSlice[n]
+		logger.GrpcLog.Infoln("Network Slice Name ", ns.Name)
+	  }
+    } else {
+		logger.GrpcLog.Errorf("Config Pod is restarted and not config received")
+    }
 	return nil
 }
