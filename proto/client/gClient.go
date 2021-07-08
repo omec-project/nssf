@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 	"math/rand"
 	"os"
+    "errors"
 	"time"
 )
 
@@ -57,6 +58,9 @@ func ConfigWatcher() {
 func CreateChannel(host string, timeout uint32) (*ConfigClient, error) {
 	logger.GrpcLog.Infoln("create config client")
 	// Second, check to see if we can reuse the gRPC connection for a new P4RT client
+    if host == "" {
+        return nil, errors.New("Input host string is NULL")
+    }
 	conn, err := GetConnection(host)
 	if err != nil {
 		logger.GrpcLog.Errorf("grpc connection failed")
