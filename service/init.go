@@ -33,7 +33,6 @@ import (
 	openApiLogger "github.com/free5gc/openapi/logger"
 	"github.com/free5gc/path_util"
 	pathUtilLogger "github.com/free5gc/path_util/logger"
-	gClient "github.com/omec-project/nssf/proto/client"
 )
 
 type NSSF struct{}
@@ -175,16 +174,6 @@ func (nssf *NSSF) Start() {
 	self := context.NSSF_Self()
 	addr := fmt.Sprintf("%s:%d", self.BindingIPv4, self.SBIPort)
 
-	// Register to NRF
-	profile, err := consumer.BuildNFProfile(self)
-	if err != nil {
-		initLog.Error("Failed to build NSSF profile")
-	}
-	_, self.NfId, err = consumer.SendRegisterNFInstance(self.NrfUri, self.NfId, profile)
-	if err != nil {
-		initLog.Errorf("Failed to register NSSF to NRF: %s", err.Error())
-	}
-
 	signalChannel := make(chan os.Signal, 1)
 	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
 	go func() {
@@ -193,7 +182,7 @@ func (nssf *NSSF) Start() {
 		os.Exit(0)
 	}()
 
-	go gClient.ConfigWatcher()
+	go nssf.registerNF()
 
 	server, err := http2_util.NewServer(addr, util.NSSF_LOG_PATH, router)
 
@@ -275,4 +264,24 @@ func (nssf *NSSF) Terminate() {
 	}
 
 	logger.InitLog.Infof("NSSF terminated")
+}
+
+func (nssf *NSSF) registerNF() {
+	for msg := range factory.ConfigPodTrigger {
+		initLog.Infof("Minimum configuration from config pod available %v", msg)
+		self := context.NSSF_Self()
+		profile, err := consumer.BuildNFProfile(self)
+		if err != nil {
+			logger.InitLog.Errorf("Build profile failed.")
+		}
+
+		var newNrfUri string
+		// send registration with updated PLMN Ids.
+		newNrfUri, self.NfId, err = consumer.SendRegisterNFInstance(self.NrfUri, profile.NfInstanceId, profile)
+		if err == nil {
+			self.NrfUri = newNrfUri
+		} else {
+			initLog.Errorf("Send Register NFInstance Error[%s]", err.Error())
+		}
+	}
 }

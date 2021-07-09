@@ -11,7 +11,10 @@ package factory
 
 import (
 	"github.com/free5gc/logger_util"
+	"github.com/free5gc/nssf/logger"
 	"github.com/free5gc/openapi/models"
+	protos "github.com/omec-project/config5g/proto/sdcoreConfig"
+	"strconv"
 )
 
 const (
@@ -97,6 +100,78 @@ type MappingFromPlmnConfig struct {
 type Subscription struct {
 	SubscriptionId   string                                  `yaml:"subscriptionId"`
 	SubscriptionData *models.NssfEventSubscriptionCreateData `yaml:"subscriptionData"`
+}
+
+var ConfigPodTrigger chan bool
+
+func init() {
+	ConfigPodTrigger = make(chan bool)
+}
+
+func (c *Config) updateConfig(commChannel chan *protos.NetworkSliceResponse) bool {
+	var minConfig bool
+	for rsp := range commChannel {
+		logger.GrpcLog.Infoln("Received updateConfig in the nssf app : ", rsp)
+		for _, ns := range rsp.NetworkSlice {
+			logger.GrpcLog.Infoln("Network Slice Name ", ns.Name)
+			if ns.Site != nil {
+				logger.GrpcLog.Infoln("Network Slice has site name present ")
+				site := ns.Site
+				logger.GrpcLog.Infoln("Site name ", site.SiteName)
+				if site.Plmn != nil {
+					logger.GrpcLog.Infoln("Plmn mcc ", site.Plmn.Mcc)
+					logger.GrpcLog.Infoln("Plmn mnc ", site.Plmn.Mnc)
+					plmn := new(models.PlmnId)
+					plmn.Mnc = site.Plmn.Mnc
+					plmn.Mcc = site.Plmn.Mcc
+					sNssaiInPlmns := SupportedNssaiInPlmn{}
+					sNssaiInPlmns.PlmnId = plmn
+					nssai := new(models.Snssai)
+					val, _ := strconv.ParseInt(ns.Nssai.Sst, 10, 64)
+					nssai.Sst = int32(val)
+					nssai.Sd = ns.Nssai.Sd
+					logger.GrpcLog.Infoln("Slice Sst ", ns.Nssai.Sst)
+					logger.GrpcLog.Infoln("Slice Sd ", ns.Nssai.Sd)
+					sNssaiInPlmns.SupportedSnssaiList = append(sNssaiInPlmns.SupportedSnssaiList, *nssai)
+					var found bool = false
+					for _, cplmn := range NssfConfig.Configuration.SupportedPlmnList {
+						if (cplmn.Mnc == plmn.Mnc) && (cplmn.Mcc == plmn.Mcc) {
+							found = true
+							break
+						}
+					}
+					if found == false {
+						NssfConfig.Configuration.SupportedPlmnList = append(NssfConfig.Configuration.SupportedPlmnList, *plmn)
+						NssfConfig.Configuration.SupportedNssaiInPlmnList = append(NssfConfig.Configuration.SupportedNssaiInPlmnList, sNssaiInPlmns)
+					}
+				} else {
+					logger.GrpcLog.Infoln("Plmn not present in the message ")
+				}
+
+			}
+		}
+		if minConfig == false {
+			// first slice Created
+			if (len(NssfConfig.Configuration.SupportedPlmnList) > 0) &&
+				(len(NssfConfig.Configuration.SupportedNssaiInPlmnList) > 0) {
+				minConfig = true
+				ConfigPodTrigger <- true
+				logger.GrpcLog.Infoln("Send config trigger to main routine")
+			}
+		} else {
+			// all slices deleted
+			if (len(NssfConfig.Configuration.SupportedPlmnList) > 0) &&
+				(len(NssfConfig.Configuration.SupportedNssaiInPlmnList) > 0) {
+				minConfig = false
+				ConfigPodTrigger <- false
+				logger.GrpcLog.Infoln("Send config trigger to main routine")
+			} else {
+				ConfigPodTrigger <- true
+				logger.GrpcLog.Infoln("Send config trigger to main routine")
+			}
+		}
+	}
+	return true
 }
 
 func (c *Config) GetVersion() string {
