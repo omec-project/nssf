@@ -12,11 +12,13 @@ package factory
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"sync"
 
 	"gopkg.in/yaml.v2"
 
 	"github.com/free5gc/nssf/logger"
+	"github.com/omec-project/config5g/proto/client"
 )
 
 var (
@@ -40,6 +42,17 @@ func InitConfigFactory(f string) error {
 			return yamlErr
 		}
 
+		roc := os.Getenv("MANAGED_BY_CONFIG_POD")
+		if roc == "true" {
+			logger.CfgLog.Infoln("MANAGED_BY_CONFIG_POD is true")
+			commChannel := client.ConfigWatcher()
+			go NssfConfig.updateConfig(commChannel)
+		} else {
+			go func() {
+				logger.CfgLog.Infoln("Use helm chart config ")
+				ConfigPodTrigger <- true
+			}()
+		}
 		Configured = true
 	}
 
