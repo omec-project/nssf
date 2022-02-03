@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2021 Open Networking Foundation <info@opennetworking.org>
 //
 // SPDX-License-Identifier: Apache-2.0
-// SPDX-License-Identifier: LicenseRef-ONF-Member-Only-1.0
+//
 
 /*
  * NSSF Configuration Factory
@@ -10,11 +10,12 @@
 package factory
 
 import (
+	"strconv"
+
 	"github.com/free5gc/logger_util"
 	"github.com/free5gc/nssf/logger"
 	"github.com/free5gc/openapi/models"
 	protos "github.com/omec-project/config5g/proto/sdcoreConfig"
-	"strconv"
 )
 
 const (
