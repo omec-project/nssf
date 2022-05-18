@@ -18,11 +18,11 @@ import (
 	"strings"
 	"time"
 
-	nssf_context "github.com/free5gc/nssf/context"
-	"github.com/free5gc/nssf/logger"
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/Nnrf_NFManagement"
-	"github.com/free5gc/openapi/models"
+	nssf_context "github.com/omec-project/nssf/context"
+	"github.com/omec-project/nssf/logger"
+	"github.com/omec-project/openapi"
+	"github.com/omec-project/openapi/Nnrf_NFManagement"
+	"github.com/omec-project/openapi/models"
 )
 
 func BuildNFProfile(context *nssf_context.NSSFContext) (profile models.NfProfile, err error) {

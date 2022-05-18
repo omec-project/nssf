@@ -16,9 +16,9 @@ import (
 	"math/rand"
 	"net/http"
 
-	"github.com/free5gc/nssf/plugin"
-	"github.com/free5gc/nssf/util"
-	"github.com/free5gc/openapi/models"
+	"github.com/omec-project/nssf/plugin"
+	"github.com/omec-project/nssf/util"
+	"github.com/omec-project/openapi/models"
 )
 
 func selectNsiInformation(nsiInformationList []models.NsiInformation) models.NsiInformation {

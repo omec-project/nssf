@@ -21,9 +21,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
-	"github.com/free5gc/nssf/logger"
-	"github.com/free5gc/nssf/service"
-	"github.com/free5gc/version"
+	"github.com/omec-project/nssf/logger"
+	"github.com/omec-project/nssf/service"
 )
 
 var NSSF = &service.NSSF{}
@@ -38,7 +37,6 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "nssf"
 	fmt.Print(app.Name, "\n")
-	appLog.Infoln("NSSF version: ", version.GetVersion())
 	app.Usage = "-free5gccfg common configuration file -nssfcfg nssf configuration file"
 	app.Action = action
 	app.Flags = NSSF.GetCliCmd()

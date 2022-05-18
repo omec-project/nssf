@@ -18,8 +18,8 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/free5gc/nssf/logger"
 	"github.com/omec-project/config5g/proto/client"
+	"github.com/omec-project/nssf/logger"
 )
 
 var (

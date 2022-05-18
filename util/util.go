@@ -14,10 +14,10 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/free5gc/nssf/factory"
-	"github.com/free5gc/nssf/logger"
-	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/path_util"
+	"github.com/omec-project/nssf/factory"
+	"github.com/omec-project/nssf/logger"
+	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/path_util"
 )
 
 // Title in Problem Details for NSSF HTTP APIs
@@ -30,7 +30,7 @@ const (
 
 // Path of HTTP2 key and log file
 var (
-	NSSF_LOG_PATH = path_util.Free5gcPath("free5gc/nssfsslkey.log")
+	NSSF_LOG_PATH = path_util.Free5gcPath("omec-project/nssfsslkey.log")
 	NSSF_PEM_PATH = path_util.Free5gcPath("free5gc/support/TLS/nssf.pem")
 	NSSF_KEY_PATH = path_util.Free5gcPath("free5gc/support/TLS/nssf.key")
 )

@@ -17,9 +17,9 @@ package producer
 import (
 	"net/http"
 
-	"github.com/free5gc/http_wrapper"
-	"github.com/free5gc/nssf/logger"
-	"github.com/free5gc/openapi/models"
+	"github.com/omec-project/http_wrapper"
+	"github.com/omec-project/nssf/logger"
+	"github.com/omec-project/openapi/models"
 )
 
 // HandleNSSAIAvailabilityUnsubscribe - Deletes an already existing NSSAI availability notification subscription
