@@ -21,11 +21,11 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/free5gc/http_wrapper"
-	"github.com/free5gc/nssf/logger"
-	"github.com/free5gc/nssf/plugin"
-	"github.com/free5gc/nssf/util"
-	"github.com/free5gc/openapi/models"
+	"github.com/omec-project/http_wrapper"
+	"github.com/omec-project/nssf/logger"
+	"github.com/omec-project/nssf/plugin"
+	"github.com/omec-project/nssf/util"
+	"github.com/omec-project/openapi/models"
 )
 
 // Parse NSSelectionGet query parameter

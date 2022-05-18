@@ -18,10 +18,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/free5gc/nssf/factory"
-	"github.com/free5gc/nssf/logger"
-	"github.com/free5gc/nssf/util"
-	"github.com/free5gc/openapi/models"
+	"github.com/omec-project/nssf/factory"
+	"github.com/omec-project/nssf/logger"
+	"github.com/omec-project/nssf/util"
+	"github.com/omec-project/openapi/models"
 )
 
 // Get available subscription ID from configuration

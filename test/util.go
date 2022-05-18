@@ -12,7 +12,7 @@ package test
 import (
 	"reflect"
 
-	. "github.com/free5gc/openapi/models"
+	. "github.com/omec-project/openapi/models"
 )
 
 func CheckAuthorizedNetworkSliceInfo(target AuthorizedNetworkSliceInfo, expectList []AuthorizedNetworkSliceInfo) bool {
