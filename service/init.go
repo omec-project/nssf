@@ -22,18 +22,17 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
-	"github.com/free5gc/http2_util"
-	"github.com/free5gc/logger_util"
-	"github.com/free5gc/nssf/consumer"
-	"github.com/free5gc/nssf/context"
-	"github.com/free5gc/nssf/factory"
-	"github.com/free5gc/nssf/logger"
-	"github.com/free5gc/nssf/nssaiavailability"
-	"github.com/free5gc/nssf/nsselection"
-	"github.com/free5gc/nssf/util"
-	openApiLogger "github.com/free5gc/openapi/logger"
-	"github.com/free5gc/path_util"
-	pathUtilLogger "github.com/free5gc/path_util/logger"
+	"github.com/omec-project/http2_util"
+	"github.com/omec-project/logger_util"
+	"github.com/omec-project/nssf/consumer"
+	"github.com/omec-project/nssf/context"
+	"github.com/omec-project/nssf/factory"
+	"github.com/omec-project/nssf/logger"
+	"github.com/omec-project/nssf/nssaiavailability"
+	"github.com/omec-project/nssf/nsselection"
+	"github.com/omec-project/nssf/util"
+	"github.com/omec-project/path_util"
+	pathUtilLogger "github.com/omec-project/path_util/logger"
 )
 
 type NSSF struct{}
@@ -134,21 +133,6 @@ func (nssf *NSSF) setLogLevel() {
 		pathUtilLogger.SetReportCaller(factory.NssfConfig.Logger.PathUtil.ReportCaller)
 	}
 
-	if factory.NssfConfig.Logger.OpenApi != nil {
-		if factory.NssfConfig.Logger.OpenApi.DebugLevel != "" {
-			if level, err := logrus.ParseLevel(factory.NssfConfig.Logger.OpenApi.DebugLevel); err != nil {
-				openApiLogger.OpenApiLog.Warnf("OpenAPI Log level [%s] is invalid, set to [info] level",
-					factory.NssfConfig.Logger.OpenApi.DebugLevel)
-				openApiLogger.SetLogLevel(logrus.InfoLevel)
-			} else {
-				openApiLogger.SetLogLevel(level)
-			}
-		} else {
-			openApiLogger.OpenApiLog.Warnln("OpenAPI Log level not set. Default set to [info] level")
-			openApiLogger.SetLogLevel(logrus.InfoLevel)
-		}
-		openApiLogger.SetReportCaller(factory.NssfConfig.Logger.OpenApi.ReportCaller)
-	}
 }
 
 func (nssf *NSSF) FilterCli(c *cli.Context) (args []string) {

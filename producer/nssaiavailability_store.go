@@ -20,11 +20,11 @@ import (
 
 	jsonpatch "github.com/evanphx/json-patch"
 
-	"github.com/free5gc/nssf/factory"
-	"github.com/free5gc/nssf/logger"
-	"github.com/free5gc/nssf/plugin"
-	"github.com/free5gc/nssf/util"
-	"github.com/free5gc/openapi/models"
+	"github.com/omec-project/nssf/factory"
+	"github.com/omec-project/nssf/logger"
+	"github.com/omec-project/nssf/plugin"
+	"github.com/omec-project/nssf/util"
+	"github.com/omec-project/openapi/models"
 )
 
 // NSSAIAvailability DELETE method
