@@ -18,7 +18,9 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
+	"github.com/omec-project/openapi/models"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
@@ -40,7 +42,8 @@ type NSSF struct{}
 type (
 	// Config information.
 	Config struct {
-		nssfcfg string
+		nssfcfg        string
+		heartBeatTimer string
 	}
 )
 
@@ -58,6 +61,11 @@ var nssfCLi = []cli.Flag{
 }
 
 var initLog *logrus.Entry
+
+var (
+	KeepAliveTimer      *time.Timer
+	KeepAliveTimerMutex sync.Mutex
+)
 
 func init() {
 	initLog = logger.InitLog
@@ -251,6 +259,78 @@ func (nssf *NSSF) Terminate() {
 	logger.InitLog.Infof("NSSF terminated")
 }
 
+func (nssf *NSSF) StartKeepAliveTimer(nfProfile models.NfProfile) {
+	KeepAliveTimerMutex.Lock()
+	defer KeepAliveTimerMutex.Unlock()
+	nssf.StopKeepAliveTimer()
+	if nfProfile.HeartBeatTimer == 0 {
+		nfProfile.HeartBeatTimer = 60
+	}
+	logger.InitLog.Infof("Started KeepAlive Timer: %v sec", nfProfile.HeartBeatTimer)
+	//AfterFunc starts timer and waits for KeepAliveTimer to elapse and then calls nssf.UpdateNF function
+	KeepAliveTimer = time.AfterFunc(time.Duration(nfProfile.HeartBeatTimer)*time.Second, nssf.UpdateNF)
+}
+
+func (nssf *NSSF) StopKeepAliveTimer() {
+	if KeepAliveTimer != nil {
+		logger.InitLog.Infof("Stopped KeepAlive Timer.")
+		KeepAliveTimer.Stop()
+		KeepAliveTimer = nil
+	}
+}
+
+func (nssf *NSSF) BuildAndSendRegisterNFInstance() (models.NfProfile, error) {
+	self := context.NSSF_Self()
+	profile, err := consumer.BuildNFProfile(self)
+	if err != nil {
+		initLog.Error("Build NSSF Profile Error: %v", err)
+		return profile, err
+	}
+	initLog.Infof("Pcf Profile Registering to NRF: %v", profile)
+	//Indefinite attempt to register until success
+	profile, _, self.NfId, err = consumer.SendRegisterNFInstance(self.NrfUri, self.NfId, profile)
+	return profile, err
+}
+
+//UpdateNF is the callback function, this is called when keepalivetimer elapsed
+func (nssf *NSSF) UpdateNF() {
+	KeepAliveTimerMutex.Lock()
+	defer KeepAliveTimerMutex.Unlock()
+	if KeepAliveTimer == nil {
+		initLog.Warnf("KeepAlive timer has been stopped.")
+		return
+	}
+	//setting default value 60 sec
+	var heartBeatTimer int32 = 60
+	pitem := models.PatchItem{
+		Op:    "replace",
+		Path:  "/nfStatus",
+		Value: "REGISTERED",
+	}
+	var patchItem []models.PatchItem
+	patchItem = append(patchItem, pitem)
+	nfProfile, problemDetails, err := consumer.SendUpdateNFInstance(patchItem)
+	if problemDetails != nil {
+		initLog.Errorf("NSSF update to NRF ProblemDetails[%v]", problemDetails)
+		//5xx response from NRF, 404 Not Found, 400 Bad Request
+		if (problemDetails.Status/100) == 5 ||
+			problemDetails.Status == 404 || problemDetails.Status == 400 {
+			//register with NRF full profile
+			nfProfile, err = nssf.BuildAndSendRegisterNFInstance()
+		}
+	} else if err != nil {
+		initLog.Errorf("NSSF update to NRF Error[%s]", err.Error())
+		nfProfile, err = nssf.BuildAndSendRegisterNFInstance()
+	}
+
+	if nfProfile.HeartBeatTimer != 0 {
+		// use hearbeattimer value with received timer value from NRF
+		heartBeatTimer = nfProfile.HeartBeatTimer
+	}
+	logger.InitLog.Debugf("Restarted KeepAlive Timer: %v sec", heartBeatTimer)
+	//restart timer with received HeartBeatTimer value
+	KeepAliveTimer = time.AfterFunc(time.Duration(heartBeatTimer)*time.Second, nssf.UpdateNF)
+}
 func (nssf *NSSF) registerNF() {
 	for msg := range factory.ConfigPodTrigger {
 		initLog.Infof("Minimum configuration from config pod available %v", msg)
@@ -261,9 +341,12 @@ func (nssf *NSSF) registerNF() {
 		}
 
 		var newNrfUri string
+		var prof models.NfProfile
 		// send registration with updated PLMN Ids.
-		newNrfUri, self.NfId, err = consumer.SendRegisterNFInstance(self.NrfUri, profile.NfInstanceId, profile)
+		prof, newNrfUri, self.NfId, err = consumer.SendRegisterNFInstance(self.NrfUri, profile.NfInstanceId, profile)
 		if err == nil {
+			nssf.StartKeepAliveTimer(prof)
+			logger.CfgLog.Infof("Sent Register NF Instance with updated profile")
 			self.NrfUri = newNrfUri
 		} else {
 			initLog.Errorf("Send Register NFInstance Error[%s]", err.Error())

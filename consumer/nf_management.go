@@ -41,15 +41,15 @@ func BuildNFProfile(context *nssf_context.NSSFContext) (profile models.NfProfile
 	return
 }
 
-func SendRegisterNFInstance(nrfUri, nfInstanceId string, profile models.NfProfile) (
-	resourceNrfUri string, retrieveNfInstanceId string, err error) {
+var SendRegisterNFInstance = func(nrfUri, nfInstanceId string, profile models.NfProfile) (
+	prof models.NfProfile, resourceNrfUri string, retrieveNfInstanceId string, err error) {
 	configuration := Nnrf_NFManagement.NewConfiguration()
 	configuration.SetBasePath(nrfUri)
 	apiClient := Nnrf_NFManagement.NewAPIClient(configuration)
 
 	var res *http.Response
 	for {
-		_, res, err = apiClient.NFInstanceIDDocumentApi.RegisterNFInstance(context.TODO(), nfInstanceId, profile)
+		prof, res, err = apiClient.NFInstanceIDDocumentApi.RegisterNFInstance(context.TODO(), nfInstanceId, profile)
 		if err != nil || res == nil {
 			// TODO : add log
 			logger.ConsumerLog.Errorf("NSSF register to NRF Error[%s]", err.Error())
@@ -75,7 +75,37 @@ func SendRegisterNFInstance(nrfUri, nfInstanceId string, profile models.NfProfil
 			fmt.Println("NRF return wrong status code", status)
 		}
 	}
-	return resourceNrfUri, retrieveNfInstanceId, err
+	return prof, resourceNrfUri, retrieveNfInstanceId, err
+}
+
+var SendUpdateNFInstance = func(patchItem []models.PatchItem) (nfProfile models.NfProfile, problemDetails *models.ProblemDetails, err error) {
+	logger.ConsumerLog.Debugf("Send Update NFInstance")
+
+	nssfSelf := nssf_context.NSSF_Self()
+	configuration := Nnrf_NFManagement.NewConfiguration()
+	configuration.SetBasePath(nssfSelf.NrfUri)
+	client := Nnrf_NFManagement.NewAPIClient(configuration)
+
+	var res *http.Response
+	nfProfile, res, err = client.NFInstanceIDDocumentApi.UpdateNFInstance(context.Background(), nssfSelf.NfId, patchItem)
+	if err == nil {
+		return
+	} else if res != nil {
+		defer func() {
+			if resCloseErr := res.Body.Close(); resCloseErr != nil {
+				logger.ConsumerLog.Errorf("UpdateNFInstance response cannot close: %+v", resCloseErr)
+			}
+		}()
+		if res.Status != err.Error() {
+			logger.ConsumerLog.Errorf("UpdateNFInstance received error response: %v", res.Status)
+			return
+		}
+		problem := err.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails)
+		problemDetails = &problem
+	} else {
+		err = openapi.ReportError("server no response")
+	}
+	return
 }
 
 func SendDeregisterNFInstance() (*models.ProblemDetails, error) {
