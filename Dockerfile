@@ -20,7 +20,7 @@ COPY . $GOPATH/src/nssf
 RUN cd $GOPATH/src/nssf \
     && make all
 
-FROM alpine:3.16 as nssf
+FROM alpine:3.19 as nssf
 
 LABEL description="ONF open source 5G Core Network" \
     version="Stage 3"
