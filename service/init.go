@@ -42,8 +42,7 @@ type NSSF struct{}
 type (
 	// Config information.
 	Config struct {
-		nssfcfg        string
-		heartBeatTimer string
+		nssfcfg string
 	}
 )
 

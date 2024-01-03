@@ -222,7 +222,7 @@ linters:
     - govet
     # - errcheck
     # - staticcheck
-    # - unused
+    - unused
     # - gosimple
     - ineffassign
     - typecheck
