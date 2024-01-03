@@ -283,7 +283,7 @@ func (nssf *NSSF) BuildAndSendRegisterNFInstance() (models.NfProfile, error) {
 	self := context.NSSF_Self()
 	profile, err := consumer.BuildNFProfile(self)
 	if err != nil {
-		initLog.Error("Build NSSF Profile Error: %v", err)
+		initLog.Errorf("Build NSSF Profile Error: %v", err)
 		return profile, err
 	}
 	initLog.Infof("Pcf Profile Registering to NRF: %v", profile)
@@ -292,7 +292,7 @@ func (nssf *NSSF) BuildAndSendRegisterNFInstance() (models.NfProfile, error) {
 	return profile, err
 }
 
-//UpdateNF is the callback function, this is called when keepalivetimer elapsed
+// UpdateNF is the callback function, this is called when keepalivetimer elapsed
 func (nssf *NSSF) UpdateNF() {
 	KeepAliveTimerMutex.Lock()
 	defer KeepAliveTimerMutex.Unlock()
