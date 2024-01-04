@@ -129,7 +129,10 @@ func (c *Config) updateConfig(commChannel chan *protos.NetworkSliceResponse) boo
 					sNssaiInPlmns := SupportedNssaiInPlmn{}
 					sNssaiInPlmns.PlmnId = plmn
 					nssai := new(models.Snssai)
-					val, _ := strconv.ParseInt(ns.Nssai.Sst, 10, 64)
+					val, err := strconv.ParseInt(ns.Nssai.Sst, 10, 64)
+					if err != nil {
+						logger.GrpcLog.Infoln("Error in parsing sst ", err)
+					}
 					nssai.Sst = int32(val)
 					nssai.Sd = ns.Nssai.Sd
 					logger.GrpcLog.Infoln("Slice Sst ", ns.Nssai.Sst)
