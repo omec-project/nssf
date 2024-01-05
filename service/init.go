@@ -209,7 +209,8 @@ func (nssf *NSSF) Exec(c *cli.Context) error {
 		initLog.Fatalln(err)
 	}
 	wg := sync.WaitGroup{}
-	wg.Add(3)
+	goRoutines := 3
+	wg.Add(goRoutines)
 	go func() {
 		in := bufio.NewScanner(stdout)
 		for in.Scan() {
@@ -311,7 +312,7 @@ func (nssf *NSSF) UpdateNF() {
 	if problemDetails != nil {
 		initLog.Errorf("NSSF update to NRF ProblemDetails[%v]", problemDetails)
 		//5xx response from NRF, 404 Not Found, 400 Bad Request
-		if (problemDetails.Status/100) == 5 ||
+		if (problemDetails.Status >= 500 && problemDetails.Status <= 599) ||
 			problemDetails.Status == 404 || problemDetails.Status == 400 {
 			//register with NRF full profile
 			nfProfile, err = nssf.BuildAndSendRegisterNFInstance()

@@ -27,6 +27,8 @@ import (
 
 var nssfContext = NSSFContext{}
 
+const port int = 29510
+
 // Initialize NSSF context with default value
 func init() {
 	nssfContext.NfId = uuid.New().String()
@@ -43,7 +45,7 @@ func init() {
 	}
 	nssfContext.NfService = initNfService(serviceName, "1.0.0")
 
-	nssfContext.NrfUri = fmt.Sprintf("%s://%s:%d", models.UriScheme_HTTPS, nssfContext.RegisterIPv4, 29510)
+	nssfContext.NrfUri = fmt.Sprintf("%s://%s:%d", models.UriScheme_HTTPS, nssfContext.RegisterIPv4, port)
 }
 
 type NSSFContext struct {
@@ -91,7 +93,7 @@ func InitNssfContext() {
 		nssfContext.NrfUri = nssfConfig.Configuration.NrfUri
 	} else {
 		logger.InitLog.Warn("NRF Uri is empty! Using localhost as NRF IPv4 address.")
-		nssfContext.NrfUri = fmt.Sprintf("%s://%s:%d", nssfContext.UriScheme, "127.0.0.1", 29510)
+		nssfContext.NrfUri = fmt.Sprintf("%s://%s:%d", nssfContext.UriScheme, "127.0.0.1", port)
 	}
 
 	nssfContext.SupportedPlmnList = nssfConfig.Configuration.SupportedPlmnList

@@ -46,6 +46,7 @@ var SendRegisterNFInstance = func(nrfUri, nfInstanceId string, profile models.Nf
 	configuration := Nnrf_NFManagement.NewConfiguration()
 	configuration.SetBasePath(nrfUri)
 	apiClient := Nnrf_NFManagement.NewAPIClient(configuration)
+	var waitTime time.Duration = 2
 
 	var res *http.Response
 	for {
@@ -53,7 +54,7 @@ var SendRegisterNFInstance = func(nrfUri, nfInstanceId string, profile models.Nf
 		if err != nil || res == nil {
 			// TODO : add log
 			logger.ConsumerLog.Errorf("NSSF register to NRF Error[%s]", err.Error())
-			time.Sleep(2 * time.Second)
+			time.Sleep(waitTime * time.Second)
 			continue
 		}
 		defer func() {

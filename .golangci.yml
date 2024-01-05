@@ -229,12 +229,11 @@ linters:
     # Additional
     # - lll
     - godox
-    #- gomnd
-    #- goconst
+    - gomnd
+    - goconst
     # - gocognit
-    # - maligned
     # - nestif
-    # - gomodguard
+    - gomodguard
     - nakedret
     # - gci
     - misspell
