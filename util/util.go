@@ -400,10 +400,11 @@ func FindMappingWithHomeSnssai(snssai models.Snssai, mappings []models.MappingOf
 func AddAllowedSnssai(allowedSnssai models.AllowedSnssai, accessType models.AccessType,
 	authorizedNetworkSliceInfo *models.AuthorizedNetworkSliceInfo) {
 	hitAllowedNssai := false
+	allowedNssaiNum := 8
 	for i := range authorizedNetworkSliceInfo.AllowedNssaiList {
 		if authorizedNetworkSliceInfo.AllowedNssaiList[i].AccessType == accessType {
 			hitAllowedNssai = true
-			if len(authorizedNetworkSliceInfo.AllowedNssaiList[i].AllowedSnssaiList) == 8 {
+			if len(authorizedNetworkSliceInfo.AllowedNssaiList[i].AllowedSnssaiList) == allowedNssaiNum {
 				logger.Util.Infof("Unable to add a new Allowed S-NSSAI since already eight S-NSSAIs in Allowed NSSAI")
 			} else {
 				authorizedNetworkSliceInfo.AllowedNssaiList[i].AllowedSnssaiList =
