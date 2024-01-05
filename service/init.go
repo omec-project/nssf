@@ -139,7 +139,6 @@ func (nssf *NSSF) setLogLevel() {
 		}
 		pathUtilLogger.SetReportCaller(factory.NssfConfig.Logger.PathUtil.ReportCaller)
 	}
-
 }
 
 func (nssf *NSSF) FilterCli(c *cli.Context) (args []string) {

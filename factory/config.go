@@ -152,7 +152,6 @@ func (c *Config) updateConfig(commChannel chan *protos.NetworkSliceResponse) boo
 				} else {
 					logger.GrpcLog.Infoln("Plmn not present in the message ")
 				}
-
 			}
 		}
 		if minConfig == false {
