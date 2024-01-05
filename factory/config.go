@@ -145,7 +145,7 @@ func (c *Config) updateConfig(commChannel chan *protos.NetworkSliceResponse) boo
 							break
 						}
 					}
-					if found == false {
+					if !found {
 						NssfConfig.Configuration.SupportedPlmnList = append(NssfConfig.Configuration.SupportedPlmnList, *plmn)
 						NssfConfig.Configuration.SupportedNssaiInPlmnList = append(NssfConfig.Configuration.SupportedNssaiInPlmnList, sNssaiInPlmns)
 					}
@@ -154,7 +154,7 @@ func (c *Config) updateConfig(commChannel chan *protos.NetworkSliceResponse) boo
 				}
 			}
 		}
-		if minConfig == false {
+		if !minConfig {
 			// first slice Created
 			if (len(NssfConfig.Configuration.SupportedPlmnList) > 0) &&
 				(len(NssfConfig.Configuration.SupportedNssaiInPlmnList) > 0) {
