@@ -39,7 +39,7 @@ func NSSAIAvailabilityDeleteProcedure(nfId string) *models.ProblemDetails {
 		}
 	}
 
-	*problemDetails = models.ProblemDetails{
+	problemDetails = &models.ProblemDetails{
 		Title:  util.UNSUPPORTED_RESOURCE,
 		Status: http.StatusNotFound,
 		Detail: fmt.Sprintf("AMF ID '%s' does not exist", nfId),
@@ -87,7 +87,7 @@ func NSSAIAvailabilityPatchProcedure(nssaiAvailabilityUpdateInfo plugin.PatchDoc
 	}
 	factory.ConfigLock.RUnlock()
 	if !hitAmf {
-		*problemDetails = models.ProblemDetails{
+		problemDetails = &models.ProblemDetails{
 			Title:  util.UNSUPPORTED_RESOURCE,
 			Status: http.StatusNotFound,
 			Detail: fmt.Sprintf("AMF ID '%s' does not exist", nfId),
@@ -114,7 +114,7 @@ func NSSAIAvailabilityPatchProcedure(nssaiAvailabilityUpdateInfo plugin.PatchDoc
 
 	patch, err := jsonpatch.DecodePatch(patchJSON)
 	if err != nil {
-		*problemDetails = models.ProblemDetails{
+		problemDetails = &models.ProblemDetails{
 			Title:  util.MALFORMED_REQUEST,
 			Status: http.StatusBadRequest,
 			Detail: err.Error(),
@@ -124,7 +124,7 @@ func NSSAIAvailabilityPatchProcedure(nssaiAvailabilityUpdateInfo plugin.PatchDoc
 
 	modified, err := patch.Apply(original)
 	if err != nil {
-		*problemDetails = models.ProblemDetails{
+		problemDetails = &models.ProblemDetails{
 			Title:  util.INVALID_REQUEST,
 			Status: http.StatusConflict,
 			Detail: err.Error(),
@@ -136,7 +136,7 @@ func NSSAIAvailabilityPatchProcedure(nssaiAvailabilityUpdateInfo plugin.PatchDoc
 	err = json.Unmarshal(modified, &factory.NssfConfig.Configuration.AmfList[amfIdx].SupportedNssaiAvailabilityData)
 	factory.ConfigLock.Unlock()
 	if err != nil {
-		*problemDetails = models.ProblemDetails{
+		problemDetails = &models.ProblemDetails{
 			Title:  util.INVALID_REQUEST,
 			Status: http.StatusBadRequest,
 			Detail: err.Error(),

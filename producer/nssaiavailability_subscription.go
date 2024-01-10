@@ -60,7 +60,7 @@ func NSSAIAvailabilityPostProcedure(createData models.NssfEventSubscriptionCreat
 	if err != nil {
 		logger.Nssaiavailability.Warnf(err.Error())
 
-		*problemDetails = models.ProblemDetails{
+		problemDetails = &models.ProblemDetails{
 			Title:  util.UNSUPPORTED_RESOURCE,
 			Status: http.StatusNotFound,
 			Detail: err.Error(),
@@ -99,7 +99,7 @@ func NSSAIAvailabilityUnsubscribeProcedure(subscriptionId string) *models.Proble
 	}
 
 	// No specific subscription ID exists
-	*problemDetails = models.ProblemDetails{
+	problemDetails = &models.ProblemDetails{
 		Title:  util.UNSUPPORTED_RESOURCE,
 		Status: http.StatusNotFound,
 		Detail: fmt.Sprintf("Subscription ID '%s' is not available", subscriptionId),
