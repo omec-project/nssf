@@ -26,11 +26,9 @@ type TestingUtil struct {
 }
 
 type TestingNsselection struct {
-	ConfigFile string
-
 	GenerateNonRoamingQueryParameter func() NsselectionQueryParameter
-
-	GenerateRoamingQueryParameter func() NsselectionQueryParameter
+	GenerateRoamingQueryParameter    func() NsselectionQueryParameter
+	ConfigFile                       string
 }
 
 type TestingNssaiavailability struct {

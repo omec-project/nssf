@@ -26,8 +26,8 @@ const (
 type Config struct {
 	Info          *Info               `yaml:"info"`
 	Configuration *Configuration      `yaml:"configuration"`
-	Subscriptions []Subscription      `yaml:"subscriptions,omitempty"`
 	Logger        *logger_util.Logger `yaml:"logger"`
+	Subscriptions []Subscription      `yaml:"subscriptions,omitempty"`
 }
 
 type Info struct {
@@ -100,8 +100,8 @@ type MappingFromPlmnConfig struct {
 }
 
 type Subscription struct {
-	SubscriptionId   string                                  `yaml:"subscriptionId"`
 	SubscriptionData *models.NssfEventSubscriptionCreateData `yaml:"subscriptionData"`
+	SubscriptionId   string                                  `yaml:"subscriptionId"`
 }
 
 var ConfigPodTrigger chan bool

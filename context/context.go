@@ -55,10 +55,10 @@ type NSSFContext struct {
 	RegisterIPv4 string
 	// HttpIpv6Address string
 	BindingIPv4       string
-	SBIPort           int
 	NfService         map[models.ServiceName]models.NfService
 	NrfUri            string
 	SupportedPlmnList []models.PlmnId
+	SBIPort           int
 }
 
 // Initialize NSSF context with configuration factory
