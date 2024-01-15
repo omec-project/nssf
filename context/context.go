@@ -49,16 +49,15 @@ func init() {
 }
 
 type NSSFContext struct {
-	NfId         string
-	Name         string
-	UriScheme    models.UriScheme
-	RegisterIPv4 string
-	// HttpIpv6Address string
+	NfId              string
+	Name              string
+	UriScheme         models.UriScheme
+	RegisterIPv4      string
 	BindingIPv4       string
-	SBIPort           int
 	NfService         map[models.ServiceName]models.NfService
 	NrfUri            string
 	SupportedPlmnList []models.PlmnId
+	SBIPort           int
 }
 
 // Initialize NSSF context with configuration factory

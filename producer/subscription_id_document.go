@@ -20,6 +20,7 @@ import (
 	"github.com/omec-project/http_wrapper"
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/openapi/models"
+	"reflect"
 )
 
 // HandleNSSAIAvailabilityUnsubscribe - Deletes an already existing NSSAI availability notification subscription
@@ -32,12 +33,12 @@ func HandleNSSAIAvailabilityUnsubscribe(request *http_wrapper.Request) *http_wra
 
 	if problemDetails == nil {
 		return http_wrapper.NewResponse(http.StatusNoContent, nil, nil)
-	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+	} else if reflect.DeepEqual(*problemDetails, models.ProblemDetails{}) {
+		problemDetails = &models.ProblemDetails{
+			Status: http.StatusForbidden,
+			Cause:  "UNSPECIFIED",
+		}
+		return http_wrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 	}
-	problemDetails = &models.ProblemDetails{
-		Status: http.StatusForbidden,
-		Cause:  "UNSPECIFIED",
-	}
-	return http_wrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 }
