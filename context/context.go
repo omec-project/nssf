@@ -53,7 +53,6 @@ type NSSFContext struct {
 	Name         string
 	UriScheme    models.UriScheme
 	RegisterIPv4 string
-	// HttpIpv6Address string
 	BindingIPv4       string
 	NfService         map[models.ServiceName]models.NfService
 	NrfUri            string
