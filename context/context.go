@@ -49,10 +49,10 @@ func init() {
 }
 
 type NSSFContext struct {
-	NfId         string
-	Name         string
-	UriScheme    models.UriScheme
-	RegisterIPv4 string
+	NfId              string
+	Name              string
+	UriScheme         models.UriScheme
+	RegisterIPv4      string
 	BindingIPv4       string
 	NfService         map[models.ServiceName]models.NfService
 	NrfUri            string
