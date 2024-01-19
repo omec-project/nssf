@@ -38,7 +38,7 @@ func BuildNFProfile(context *nssf_context.NSSFContext) (profile models.NfProfile
 	if len(services) > 0 {
 		profile.NfServices = &services
 	}
-	return
+	return profile, err
 }
 
 var SendRegisterNFInstance = func(nrfUri, nfInstanceId string, profile models.NfProfile) (
