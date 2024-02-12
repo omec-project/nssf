@@ -39,8 +39,9 @@ github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kd
 github.com/antonfisher/nested-logrus-formatter v1.3.0/go.mod h1:6WTfyWFkBc9+zyBaKIqRrg/KwMqBbodBjgbHjDz7zjA=
 github.com/antonfisher/nested-logrus-formatter v1.3.1 h1:NFJIr+pzwv5QLHTPyKz9UMEoHck02Q9L0FP13b/xSbQ=
 github.com/antonfisher/nested-logrus-formatter v1.3.1/go.mod h1:6WTfyWFkBc9+zyBaKIqRrg/KwMqBbodBjgbHjDz7zjA=
-github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef h1:46PFijGLmAjMPwCCCo7Jf0W6f9slllCkkv7vyc1yOSg=
 github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef/go.mod h1:WaHUgvxTVq04UNunO+XhnAqY/wQc+bxr74GqbsZ/Jqw=
+github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d h1:Byv0BzEl3/e6D5CLfI0j/7hiIEtvGVFPCZ7Ei2oq8iQ=
+github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d/go.mod h1:WaHUgvxTVq04UNunO+XhnAqY/wQc+bxr74GqbsZ/Jqw=
 github.com/bytedance/sonic v1.5.0/go.mod h1:ED5hyg4y6t3/9Ku1R6dU/4KyJ48DZ4jPhfY1O2AihPM=
 github.com/bytedance/sonic v1.9.1 h1:6iJ6NqdoxCDr6mbY8h18oSO+cShGSMRGCEo7F2h0x8s=
 github.com/bytedance/sonic v1.9.1/go.mod h1:i736AoUSYt75HyZLoJW9ERYxcy6eaN6h4BZXU064P/U=
@@ -193,8 +194,6 @@ github.com/omec-project/config5g v1.2.0 h1:fyIg+1LZ9jn8DTkVUbD4jyxA4FgMICdIBwZVn
 github.com/omec-project/config5g v1.2.0/go.mod h1:AWFzCbbgCBx/iJwt+zWbpDGLHRpFzg24OYHqIkdcMVA=
 github.com/omec-project/http2_util v1.1.0 h1:8H2NME/V8iONth8TlyK/3w4pguAzaeUnEv9pmeAocwQ=
 github.com/omec-project/http2_util v1.1.0/go.mod h1:QwoZRaUyhEp/kTEqXvf0gCYtfQrNHBdkVw939vsMjZY=
-github.com/omec-project/http_wrapper v1.1.0 h1:2hD8RUaR/VVg3tUUfuxsuo1/JNpZLiAE8IvATGqDME4=
-github.com/omec-project/http_wrapper v1.1.0/go.mod h1:mc045fjVVJ0/q0g4QG4nuSC0N1BIqGR/ZoK76XgifVU=
 github.com/omec-project/logger_conf v1.1.0 h1:C0/HbsSOWV8D3/lm7Iqe1nUL9ltVtVO4MDC9ZxIo/xc=
 github.com/omec-project/logger_conf v1.1.0/go.mod h1:2+SOX9OFbPZ+UNv8k+tvPnaWHo4CuX5G/x12dz5sWUE=
 github.com/omec-project/logger_util v1.1.0 h1:R7tT80+ML1HlK4OoTrNv/UK+2H/u2GdIFNBx41g630Q=
@@ -203,6 +202,8 @@ github.com/omec-project/openapi v1.1.0 h1:N3v59+FM2V/eCv2Au10kbyeTf1DsScJkEdkDEc
 github.com/omec-project/openapi v1.1.0/go.mod h1:Fv9ajWROYypcNER+ZwWXPhLCdV4pBz75KqFp/R/2gCw=
 github.com/omec-project/path_util v1.1.0 h1:vzzLsay8+uexyYEqS06th8lMcwp+N+CXcaHhaypZn1Q=
 github.com/omec-project/path_util v1.1.0/go.mod h1:O1ch35al6+FXKmg6+5vOpKusl4fiB0u36oYjxwI4QK4=
+github.com/omec-project/util v1.0.12 h1:fmeeUxexHdi4nipAJumaq4lcx9l83FPaNfGH2fRmTTw=
+github.com/omec-project/util v1.0.12/go.mod h1:Cn9P57qYFiEu0ZXti8imODsJIXVGqnqhP40MwbVbo3g=
 github.com/pelletier/go-toml/v2 v2.0.8 h1:0ctb6s9mE31h0/lhu+J6OPmVeDxJn+kYnJc2jZR9tGQ=
 github.com/pelletier/go-toml/v2 v2.0.8/go.mod h1:vuYfssBdrU2XDZ9bYydBu6t+6a6PYNcZljzZR9VXg+4=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=

@@ -17,13 +17,13 @@ package producer
 import (
 	"net/http"
 
-	"github.com/omec-project/http_wrapper"
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/util/httpwrapper"
 )
 
 // HandleNSSAIAvailabilityPost - Creates subscriptions for notification about updates to NSSAI availability information
-func HandleNSSAIAvailabilityPost(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleNSSAIAvailabilityPost(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.Nssaiavailability.Infof("Handle NSSAIAvailabilityPost")
 
 	createData := request.Body.(models.NssfEventSubscriptionCreateData)
@@ -34,13 +34,13 @@ func HandleNSSAIAvailabilityPost(request *http_wrapper.Request) *http_wrapper.Re
 
 	if response != nil {
 		// TODO: Based on TS 29.531 5.3.2.3.1, add location header
-		return http_wrapper.NewResponse(http.StatusCreated, nil, response)
+		return httpwrapper.NewResponse(http.StatusCreated, nil, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	return http_wrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }

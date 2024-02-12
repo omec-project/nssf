@@ -21,11 +21,11 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/omec-project/http_wrapper"
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/nssf/plugin"
 	"github.com/omec-project/nssf/util"
 	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/util/httpwrapper"
 )
 
 // Parse NSSelectionGet query parameter
@@ -94,7 +94,7 @@ func checkNfServiceConsumer(nfType models.NfType) error {
 }
 
 // NSSelectionGet - Retrieve the Network Slice Selection Information
-func HandleNSSelectionGet(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleNSSelectionGet(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.Nsselection.Infof("Handle NSSelectionGet")
 
 	query := request.Query
@@ -102,15 +102,15 @@ func HandleNSSelectionGet(request *http_wrapper.Request) *http_wrapper.Response 
 	response, problemDetails := NSSelectionGetProcedure(query)
 
 	if response != nil {
-		return http_wrapper.NewResponse(http.StatusOK, nil, response)
+		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	return http_wrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
 func NSSelectionGetProcedure(query url.Values) (*models.AuthorizedNetworkSliceInfo, *models.ProblemDetails) {
