@@ -19,7 +19,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/omec-project/http_wrapper"
+	"github.com/omec-project/util/httpwrapper"
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/nssf/producer"
 	"github.com/omec-project/openapi"
@@ -35,7 +35,7 @@ func HTTPNSSAIAvailabilityUnsubscribe(c *gin.Context) {
 		return
 	}
 
-	req := http_wrapper.NewRequest(c.Request, nil)
+	req := httpwrapper.NewRequest(c.Request, nil)
 	req.Params["subscriptionId"] = c.Params.ByName("subscriptionId")
 
 	rsp := producer.HandleNSSAIAvailabilityUnsubscribe(req)

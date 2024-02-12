@@ -17,15 +17,15 @@ package producer
 import (
 	"net/http"
 
-	"github.com/omec-project/http_wrapper"
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/nssf/plugin"
 	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/util/httpwrapper"
 )
 
 // HandleNSSAIAvailabilityDelete - Deletes an already existing S-NSSAIs per TA
 // provided by the NF service consumer (e.g AMF)
-func HandleNSSAIAvailabilityDelete(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleNSSAIAvailabilityDelete(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.Nssaiavailability.Infof("Handle NSSAIAvailabilityDelete")
 
 	nfID := request.Params["nfId"]
@@ -33,14 +33,14 @@ func HandleNSSAIAvailabilityDelete(request *http_wrapper.Request) *http_wrapper.
 	problemDetails := NSSAIAvailabilityDeleteProcedure(nfID)
 
 	if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
-	return http_wrapper.NewResponse(http.StatusNoContent, nil, nil)
+	return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 }
 
 // HandleNSSAIAvailabilityPatch - Updates an already existing S-NSSAIs per TA
 // provided by the NF service consumer (e.g AMF)
-func HandleNSSAIAvailabilityPatch(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleNSSAIAvailabilityPatch(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.Nssaiavailability.Infof("Handle NSSAIAvailabilityPatch")
 
 	nssaiAvailabilityUpdateInfo := request.Body.(plugin.PatchDocument)
@@ -54,20 +54,20 @@ func HandleNSSAIAvailabilityPatch(request *http_wrapper.Request) *http_wrapper.R
 	response, problemDetails := NSSAIAvailabilityPatchProcedure(nssaiAvailabilityUpdateInfo, nfID)
 
 	if response != nil {
-		return http_wrapper.NewResponse(http.StatusOK, nil, response)
+		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	return http_wrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
 // HandleNSSAIAvailabilityPut - Updates/replaces the NSSF
 // with the S-NSSAIs the NF service consumer (e.g AMF) supports per TA
-func HandleNSSAIAvailabilityPut(request *http_wrapper.Request) *http_wrapper.Response {
+func HandleNSSAIAvailabilityPut(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.Nssaiavailability.Infof("Handle NSSAIAvailabilityPut")
 
 	nssaiAvailabilityInfo := request.Body.(models.NssaiAvailabilityInfo)
@@ -76,13 +76,13 @@ func HandleNSSAIAvailabilityPut(request *http_wrapper.Request) *http_wrapper.Res
 	response, problemDetails := NSSAIAvailabilityPutProcedure(nssaiAvailabilityInfo, nfID)
 
 	if response != nil {
-		return http_wrapper.NewResponse(http.StatusOK, nil, response)
+		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
-		return http_wrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	return http_wrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }

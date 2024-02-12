@@ -19,7 +19,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/omec-project/http_wrapper"
+	"github.com/omec-project/util/httpwrapper"
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/nssf/plugin"
 	"github.com/omec-project/nssf/producer"
@@ -28,7 +28,7 @@ import (
 )
 
 func HTTPNSSAIAvailabilityDelete(c *gin.Context) {
-	req := http_wrapper.NewRequest(c.Request, nil)
+	req := httpwrapper.NewRequest(c.Request, nil)
 	req.Params["nfId"] = c.Params.ByName("nfId")
 
 	rsp := producer.HandleNSSAIAvailabilityDelete(req)
@@ -76,7 +76,7 @@ func HTTPNSSAIAvailabilityPatch(c *gin.Context) {
 		return
 	}
 
-	req := http_wrapper.NewRequest(c.Request, nssaiAvailabilityUpdateInfo)
+	req := httpwrapper.NewRequest(c.Request, nssaiAvailabilityUpdateInfo)
 	req.Params["nfId"] = c.Params.ByName("nfId")
 
 	rsp := producer.HandleNSSAIAvailabilityPatch(req)
@@ -124,7 +124,7 @@ func HTTPNSSAIAvailabilityPut(c *gin.Context) {
 		return
 	}
 
-	req := http_wrapper.NewRequest(c.Request, nssaiAvailabilityInfo)
+	req := httpwrapper.NewRequest(c.Request, nssaiAvailabilityInfo)
 	req.Params["nfId"] = c.Params.ByName("nfId")
 
 	rsp := producer.HandleNSSAIAvailabilityPut(req)
