@@ -17,7 +17,7 @@ import (
 	"github.com/omec-project/nssf/factory"
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/openapi/models"
-	"github.com/omec-project/path_util"
+	"github.com/omec-project/util/path_util"
 )
 
 // Title in Problem Details for NSSF HTTP APIs
