@@ -13,7 +13,7 @@ import (
 	"flag"
 
 	. "github.com/omec-project/nssf/plugin"
-	"github.com/omec-project/path_util"
+	"github.com/omec-project/util/path_util"
 )
 
 var (
