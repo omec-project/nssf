@@ -1,4 +1,5 @@
 # Copyright 2021-present Open Networking Foundation
+# Copyright 2024-present Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -7,18 +8,22 @@ FROM golang:1.22.0-bookworm AS builder
 
 LABEL maintainer="ONF <omec-dev@opennetworking.org>"
 
-#RUN apt remove cmdtest yarn
-RUN apt-get update && apt-get -y install apt-transport-https ca-certificates
-RUN apt-get update
-RUN apt-get -y install gcc cmake autoconf libtool pkg-config libmnl-dev libyaml-dev
-RUN apt-get clean
-# Copy into path
+RUN apt-get update && \
+    apt-get -y install --no-install-recommends \
+    apt-transport-https \
+    ca-certificates \
+    gcc \
+    cmake \
+    autoconf \
+    libtool \
+    pkg-config \
+    libmnl-dev \
+    libyaml-dev && \
+    apt-get clean
 
-RUN cd $GOPATH/src && mkdir -p nssf
-COPY . $GOPATH/src/nssf
-
-RUN cd $GOPATH/src/nssf \
-    && make all
+WORKDIR $GOPATH/src/nssf
+COPY . .
+RUN make all
 
 FROM alpine:3.19 as nssf
 
@@ -27,13 +32,13 @@ LABEL description="ONF open source 5G Core Network" \
 
 ARG DEBUG_TOOLS
 
-# Install debug tools ~ 100MB (if DEBUG_TOOLS is set to true)
-RUN apk update && apk add -U vim strace net-tools curl netcat-openbsd bind-tools
+# Install debug tools ~ 50MB (if DEBUG_TOOLS is set to true)
+RUN if [ "$DEBUG_TOOLS" = "true" ]; then \
+        apk update && apk add --no-cache -U vim strace net-tools curl netcat-openbsd bind-tools; \
+        fi
 
 # Set working dir
-WORKDIR /free5gc
-RUN mkdir -p nssf/
+WORKDIR /free5gc/nssf
 
 # Copy executable and default certs
-COPY --from=builder /go/src/nssf/bin/* ./nssf
-WORKDIR /free5gc/nssf
+COPY --from=builder /go/src/nssf/bin/* .
