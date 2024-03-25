@@ -41,11 +41,13 @@ func InitConfigFactory(f string) error {
 		if yamlErr := yaml.Unmarshal(content, &NssfConfig); yamlErr != nil {
 			return yamlErr
 		}
-
+		if NssfConfig.Configuration.WebuiUri == "" {
+			NssfConfig.Configuration.WebuiUri = "webui:9876"
+		}
 		roc := os.Getenv("MANAGED_BY_CONFIG_POD")
 		if roc == "true" {
 			logger.CfgLog.Infoln("MANAGED_BY_CONFIG_POD is true")
-			commChannel := client.ConfigWatcher()
+			commChannel := client.ConfigWatcher(NssfConfig.Configuration.WebuiUri)
 			go NssfConfig.updateConfig(commChannel)
 		} else {
 			go func() {
