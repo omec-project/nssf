@@ -66,8 +66,8 @@ github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9G
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32 h1:W6apQkHrMkS0Muv8G/TipAy/FJl/rCYT0+EuS8+Z0z4=
 github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32/go.mod h1:9wM+0iRr9ahx58uYLpLIr5fm8diHn0JbqRycJi6w0Ms=
-github.com/omec-project/config5g v1.3.0 h1:e/oMZlQsef8bOpHT56uAMKIag3epCOW0jpmyadFC+30=
-github.com/omec-project/config5g v1.3.0/go.mod h1:h6eaDdWEY7432L9rZAg1Za6HrvFvDWRNolAn5GK/5No=
+github.com/omec-project/config5g v1.3.1 h1:hSvFHXh/J0mslsWR82PPnmpF0WzkmLa6AOdvEPve9e8=
+github.com/omec-project/config5g v1.3.1/go.mod h1:lN/Jc2BZkE/smOGPCXxeo1dJ7s+s9Wgp34crNLH4YeE=
 github.com/omec-project/http2_util v1.2.0 h1:ggQ1GjY2x6VRpKuRhZj0t9dh6eISY6LRBv4rlMD++8s=
 github.com/omec-project/http2_util v1.2.0/go.mod h1:KLgvU3o7qmG/i5XO/qITscFql2tWCAmjE6glX+dxe7M=
 github.com/omec-project/logger_conf v1.1.1 h1:qo0cF5gnPfth8wy+I/QjiOx+F5jB6h4GLSOdyS+ted8=
