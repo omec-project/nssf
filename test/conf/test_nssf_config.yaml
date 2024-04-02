@@ -17,7 +17,6 @@ configuration:
     - nnssf_nsselection
     - nnssf_nssaiavailability
   nrfUri: https://localhost:29510
-  webuiUri: webui:9876
   supportedPlmnList:
     - mcc: 466
       mnc: 92
