@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2024 Canonical Ltd.
 /*
- *  Tests for AMF Configuration Factory
+ *  Tests for NSSF Configuration Factory
  */
 
 package factory
