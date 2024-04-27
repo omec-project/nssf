@@ -30,6 +30,7 @@ import (
 	"github.com/omec-project/nssf/context"
 	"github.com/omec-project/nssf/factory"
 	"github.com/omec-project/nssf/logger"
+	"github.com/omec-project/nssf/metrics"
 	"github.com/omec-project/nssf/nssaiavailability"
 	"github.com/omec-project/nssf/nsselection"
 	"github.com/omec-project/nssf/util"
@@ -161,6 +162,8 @@ func (nssf *NSSF) Start() {
 
 	nssaiavailability.AddService(router)
 	nsselection.AddService(router)
+
+	go metrics.InitMetrics()
 
 	self := context.NSSF_Self()
 	addr := fmt.Sprintf("%s:%d", self.BindingIPv4, self.SBIPort)
