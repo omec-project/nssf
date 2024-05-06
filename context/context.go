@@ -19,7 +19,6 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-
 	"github.com/omec-project/nssf/factory"
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/openapi/models"
@@ -99,7 +98,8 @@ func InitNssfContext() {
 }
 
 func initNfService(serviceName []models.ServiceName, version string) (
-	nfService map[models.ServiceName]models.NfService) {
+	nfService map[models.ServiceName]models.NfService,
+) {
 	versionUri := "v" + strings.Split(version, ".")[0]
 	nfService = make(map[models.ServiceName]models.NfService)
 	for idx, name := range serviceName {

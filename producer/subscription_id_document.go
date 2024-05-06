@@ -16,11 +16,11 @@ package producer
 
 import (
 	"net/http"
+	"reflect"
 
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/util/httpwrapper"
-	"reflect"
 )
 
 // HandleNSSAIAvailabilityUnsubscribe - Deletes an already existing NSSAI availability notification subscription
