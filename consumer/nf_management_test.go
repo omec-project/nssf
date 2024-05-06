@@ -15,7 +15,6 @@ func TestBuildNFProfile_EmptyContext(t *testing.T) {
 	ctx := context.NSSFContext{NfId: "test-id"}
 
 	profile, err := consumer.BuildNFProfile(&ctx)
-
 	if err != nil {
 		t.Errorf("Error building NFProfile: %v\n", err)
 	}
@@ -31,15 +30,17 @@ func TestBuildNFProfile_EmptyContext(t *testing.T) {
 }
 
 func TestBuildNFProfile_InitializedContext(t *testing.T) {
-	ctx := context.NSSFContext{NfId: "test-id",
+	ctx := context.NSSFContext{
+		NfId:              "test-id",
 		SupportedPlmnList: []models.PlmnId{{Mcc: "200", Mnc: "99"}},
 		RegisterIPv4:      "127.0.0.42",
-		NfService: map[models.ServiceName]models.NfService{models.ServiceName_NNSSF_NSSELECTION: {ServiceInstanceId: "instance-id",
-			ServiceName: "service-name"}},
+		NfService: map[models.ServiceName]models.NfService{models.ServiceName_NNSSF_NSSELECTION: {
+			ServiceInstanceId: "instance-id",
+			ServiceName:       "service-name",
+		}},
 	}
 
 	profile, err := consumer.BuildNFProfile(&ctx)
-
 	if err != nil {
 		t.Errorf("Error building NFProfile: %v\n", err)
 	}

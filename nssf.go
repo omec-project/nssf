@@ -18,11 +18,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
-
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/nssf/service"
+	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli"
 )
 
 var NSSF = &service.NSSF{}

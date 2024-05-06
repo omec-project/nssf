@@ -42,7 +42,8 @@ func BuildNFProfile(context *nssf_context.NSSFContext) (profile models.NfProfile
 }
 
 var SendRegisterNFInstance = func(nrfUri, nfInstanceId string, profile models.NfProfile) (
-	prof models.NfProfile, resourceNrfUri string, retrieveNfInstanceId string, err error) {
+	prof models.NfProfile, resourceNrfUri string, retrieveNfInstanceId string, err error,
+) {
 	configuration := Nnrf_NFManagement.NewConfiguration()
 	configuration.SetBasePath(nrfUri)
 	apiClient := Nnrf_NFManagement.NewAPIClient(configuration)

@@ -22,7 +22,8 @@ import (
 
 // Set Allowed NSSAI with Subscribed S-NSSAI(s) which are marked as default S-NSSAI(s)
 func useDefaultSubscribedSnssai(
-	param plugin.NsselectionQueryParameter, authorizedNetworkSliceInfo *models.AuthorizedNetworkSliceInfo) {
+	param plugin.NsselectionQueryParameter, authorizedNetworkSliceInfo *models.AuthorizedNetworkSliceInfo,
+) {
 	var mappingOfSnssai []models.MappingOfSnssai
 	if param.HomePlmnId != nil {
 		// Find mapping of Subscribed S-NSSAI of UE's HPLMN to S-NSSAI in Serving PLMN from NSSF configuration
@@ -88,7 +89,8 @@ func useDefaultSubscribedSnssai(
 
 // Set Configured NSSAI with S-NSSAI(s) in Requested NSSAI which are marked as Default Configured NSSAI
 func useDefaultConfiguredNssai(
-	param plugin.NsselectionQueryParameter, authorizedNetworkSliceInfo *models.AuthorizedNetworkSliceInfo) {
+	param plugin.NsselectionQueryParameter, authorizedNetworkSliceInfo *models.AuthorizedNetworkSliceInfo,
+) {
 	for _, requestedSnssai := range param.SliceInfoRequestForRegistration.RequestedNssai {
 		// Check whether the Default Configured S-NSSAI is standard, which could be commonly decided by all roaming partners
 		if !util.CheckStandardSnssai(requestedSnssai) {
@@ -113,7 +115,8 @@ func useDefaultConfiguredNssai(
 
 // Set Configured NSSAI with Subscribed S-NSSAI(s)
 func setConfiguredNssai(
-	param plugin.NsselectionQueryParameter, authorizedNetworkSliceInfo *models.AuthorizedNetworkSliceInfo) {
+	param plugin.NsselectionQueryParameter, authorizedNetworkSliceInfo *models.AuthorizedNetworkSliceInfo,
+) {
 	var mappingOfSnssai []models.MappingOfSnssai
 	if param.HomePlmnId != nil {
 		// Find mapping of Subscribed S-NSSAI of UE's HPLMN to S-NSSAI in Serving PLMN from NSSF configuration
@@ -160,13 +163,13 @@ func setConfiguredNssai(
 // The function is executed when the IE, `slice-info-request-for-registration`, is provided in query parameters
 func nsselectionForRegistration(param plugin.NsselectionQueryParameter,
 	authorizedNetworkSliceInfo *models.AuthorizedNetworkSliceInfo,
-	problemDetails *models.ProblemDetails) int {
+	problemDetails *models.ProblemDetails,
+) int {
 	var status int
 	if param.HomePlmnId != nil {
 		// Check whether UE's Home PLMN is supported when UE is a roamer
 		if !util.CheckSupportedHplmn(*param.HomePlmnId) {
-			authorizedNetworkSliceInfo.RejectedNssaiInPlmn =
-				append(authorizedNetworkSliceInfo.RejectedNssaiInPlmn, param.SliceInfoRequestForRegistration.RequestedNssai...)
+			authorizedNetworkSliceInfo.RejectedNssaiInPlmn = append(authorizedNetworkSliceInfo.RejectedNssaiInPlmn, param.SliceInfoRequestForRegistration.RequestedNssai...)
 
 			status = http.StatusOK
 			return status
@@ -176,8 +179,7 @@ func nsselectionForRegistration(param plugin.NsselectionQueryParameter,
 	if param.Tai != nil {
 		// Check whether UE's current TA is supported when UE provides TAI
 		if !util.CheckSupportedTa(*param.Tai) {
-			authorizedNetworkSliceInfo.RejectedNssaiInTa =
-				append(authorizedNetworkSliceInfo.RejectedNssaiInTa, param.SliceInfoRequestForRegistration.RequestedNssai...)
+			authorizedNetworkSliceInfo.RejectedNssaiInTa = append(authorizedNetworkSliceInfo.RejectedNssaiInTa, param.SliceInfoRequestForRegistration.RequestedNssai...)
 
 			status = http.StatusOK
 			return status
@@ -191,8 +193,7 @@ func nsselectionForRegistration(param plugin.NsselectionQueryParameter,
 		// for S-NSSAIs in both `sNssaiForMapping` and `subscribedSnssai` if present
 
 		if param.HomePlmnId == nil {
-			problemDetail :=
-				"[Query Parameter] `home-plmn-id` should be provided when requesting VPLMN specific mapped S-NSSAI values"
+			problemDetail := "[Query Parameter] `home-plmn-id` should be provided when requesting VPLMN specific mapped S-NSSAI values"
 			*problemDetails = models.ProblemDetails{
 				Title:  util.INVALID_REQUEST,
 				Status: http.StatusBadRequest,
@@ -334,8 +335,7 @@ func nsselectionForRegistration(param plugin.NsselectionQueryParameter,
 					// TODO: Search for local configuration if there is no provided mapping from UE, and update UE's
 					//       Configured NSSAI
 					checkInvalidRequestedNssai = true
-					authorizedNetworkSliceInfo.RejectedNssaiInPlmn =
-						append(authorizedNetworkSliceInfo.RejectedNssaiInPlmn, requestedSnssai)
+					authorizedNetworkSliceInfo.RejectedNssaiInPlmn = append(authorizedNetworkSliceInfo.RejectedNssaiInPlmn, requestedSnssai)
 					continue
 				} else {
 					// TODO: Check if mappings of S-NSSAIs are correct
@@ -386,8 +386,7 @@ func nsselectionForRegistration(param plugin.NsselectionQueryParameter,
 				// Requested S-NSSAI does not match any Subscribed S-NSSAI
 				// Add it to Rejected NSSAI in PLMN
 				checkInvalidRequestedNssai = true
-				authorizedNetworkSliceInfo.RejectedNssaiInPlmn =
-					append(authorizedNetworkSliceInfo.RejectedNssaiInPlmn, requestedSnssai)
+				authorizedNetworkSliceInfo.RejectedNssaiInPlmn = append(authorizedNetworkSliceInfo.RejectedNssaiInPlmn, requestedSnssai)
 			}
 		}
 
