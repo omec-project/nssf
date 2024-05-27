@@ -25,7 +25,7 @@ WORKDIR $GOPATH/src/nssf
 COPY . .
 RUN make all
 
-FROM alpine:3.19 as nssf
+FROM alpine:3.20 as nssf
 
 LABEL description="ONF open source 5G Core Network" \
     version="Stage 3"
