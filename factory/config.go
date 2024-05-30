@@ -14,9 +14,9 @@ import (
 	"strconv"
 
 	protos "github.com/omec-project/config5g/proto/sdcoreConfig"
-	"github.com/omec-project/logger_util"
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/openapi/models"
+	logger_util "github.com/omec-project/util/logger"
 )
 
 const (
