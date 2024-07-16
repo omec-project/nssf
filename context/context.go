@@ -21,6 +21,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/omec-project/nssf/factory"
 	"github.com/omec-project/nssf/logger"
+	"github.com/omec-project/nssf/util"
 	"github.com/omec-project/openapi/models"
 )
 
@@ -53,6 +54,8 @@ type NSSFContext struct {
 	UriScheme         models.UriScheme
 	RegisterIPv4      string
 	BindingIPv4       string
+	Key               string
+	PEM               string
 	NfService         map[models.ServiceName]models.NfService
 	NrfUri            string
 	SupportedPlmnList []models.PlmnId
@@ -75,6 +78,16 @@ func InitNssfContext() {
 	nssfContext.RegisterIPv4 = nssfConfig.Configuration.Sbi.RegisterIPv4
 	nssfContext.SBIPort = nssfConfig.Configuration.Sbi.Port
 	nssfContext.BindingIPv4 = os.Getenv(nssfConfig.Configuration.Sbi.BindingIPv4)
+	nssfContext.Key = util.NSSF_KEY_PATH // default key path
+	nssfContext.PEM = util.NSSF_PEM_PATH // default PEM path
+	if tls := nssfConfig.Configuration.Sbi.TLS; tls != nil {
+		if tls.Key != "" {
+			nssfContext.Key = tls.Key
+		}
+		if tls.PEM != "" {
+			nssfContext.PEM = tls.PEM
+		}
+	}
 	if nssfContext.BindingIPv4 != "" {
 		logger.ContextLog.Info("Parsing ServerIPv4 address from ENV Variable.")
 	} else {
