@@ -192,7 +192,7 @@ func (nssf *NSSF) Start() {
 	if serverScheme == "http" {
 		err = server.ListenAndServe()
 	} else if serverScheme == "https" {
-		err = server.ListenAndServeTLS(util.NSSF_PEM_PATH, util.NSSF_KEY_PATH)
+		err = server.ListenAndServeTLS(self.PEM, self.Key)
 	}
 
 	if err != nil {
