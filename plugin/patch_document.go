@@ -10,7 +10,7 @@
 package plugin
 
 import (
-	. "github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/models"
 )
 
-type PatchDocument []PatchItem
+type PatchDocument []models.PatchItem

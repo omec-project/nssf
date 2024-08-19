@@ -109,7 +109,7 @@ func NSSAIAvailabilityPatchProcedure(nssaiAvailabilityUpdateInfo plugin.PatchDoc
 	}
 	patchJSON, err := json.Marshal(nssaiAvailabilityUpdateInfo)
 	if err != nil {
-		logger.Nssaiavailability.Errorf("Marshal error in NSSAIAvailabilityPatchProcedure: %+v", err)
+		logger.Nssaiavailability.Errorf("marshal error in NSSAIAvailabilityPatchProcedure: %+v", err)
 	}
 
 	patch, err := jsonpatch.DecodePatch(patchJSON)
@@ -212,7 +212,7 @@ func NSSAIAvailabilityPutProcedure(nssaiAvailabilityInfo models.NssaiAvailabilit
 		if err == nil {
 			response.AuthorizedNssaiAvailabilityData = append(response.AuthorizedNssaiAvailabilityData, authorizedNssaiAvailabilityData)
 		} else {
-			logger.Nssaiavailability.Warnf(err.Error())
+			logger.Nssaiavailability.Warnln(err.Error())
 		}
 	}
 

@@ -22,16 +22,16 @@ import (
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/nssf/producer"
 	"github.com/omec-project/openapi"
-	. "github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/util/httpwrapper"
 )
 
 func HTTPNSSAIAvailabilityPost(c *gin.Context) {
-	var createData NssfEventSubscriptionCreateData
+	var createData models.NssfEventSubscriptionCreateData
 
 	requestBody, err := c.GetRawData()
 	if err != nil {
-		problemDetail := ProblemDetails{
+		problemDetail := models.ProblemDetails{
 			Title:  "System failure",
 			Status: http.StatusInternalServerError,
 			Detail: err.Error(),
@@ -45,7 +45,7 @@ func HTTPNSSAIAvailabilityPost(c *gin.Context) {
 	err = openapi.Deserialize(&createData, requestBody, "application/json")
 	if err != nil {
 		problemDetail := "[Request Body] " + err.Error()
-		rsp := ProblemDetails{
+		rsp := models.ProblemDetails{
 			Title:  "Malformed request syntax",
 			Status: http.StatusBadRequest,
 			Detail: problemDetail,
@@ -64,7 +64,7 @@ func HTTPNSSAIAvailabilityPost(c *gin.Context) {
 	responseBody, err := openapi.Serialize(rsp.Body, "application/json")
 	if err != nil {
 		logger.HandlerLog.Errorln(err)
-		problemDetails := ProblemDetails{
+		problemDetails := models.ProblemDetails{
 			Status: http.StatusInternalServerError,
 			Cause:  "SYSTEM_FAILURE",
 			Detail: err.Error(),
