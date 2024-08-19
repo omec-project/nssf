@@ -12,7 +12,7 @@ package test
 import (
 	"flag"
 
-	. "github.com/omec-project/nssf/plugin"
+	"github.com/omec-project/nssf/plugin"
 	"github.com/omec-project/util/path_util"
 )
 
@@ -26,8 +26,8 @@ type TestingUtil struct {
 }
 
 type TestingNsselection struct {
-	GenerateNonRoamingQueryParameter func() NsselectionQueryParameter
-	GenerateRoamingQueryParameter    func() NsselectionQueryParameter
+	GenerateNonRoamingQueryParameter func() plugin.NsselectionQueryParameter
+	GenerateRoamingQueryParameter    func() plugin.NsselectionQueryParameter
 	ConfigFile                       string
 }
 

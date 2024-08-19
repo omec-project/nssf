@@ -37,7 +37,7 @@ func getUnusedSubscriptionID() (string, error) {
 		}
 		if uint32(tempID) == idx {
 			if idx == math.MaxUint32 {
-				return "", fmt.Errorf("No available subscription ID")
+				return "", fmt.Errorf("no available subscription ID")
 			}
 			idx = idx + 1
 		} else {
@@ -59,7 +59,7 @@ func NSSAIAvailabilityPostProcedure(createData models.NssfEventSubscriptionCreat
 	var subscription factory.Subscription
 	tempID, err := getUnusedSubscriptionID()
 	if err != nil {
-		logger.Nssaiavailability.Warnf(err.Error())
+		logger.Nssaiavailability.Warnln(err.Error())
 
 		problemDetails = &models.ProblemDetails{
 			Title:  util.UNSUPPORTED_RESOURCE,

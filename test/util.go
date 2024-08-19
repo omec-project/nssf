@@ -12,10 +12,10 @@ package test
 import (
 	"reflect"
 
-	. "github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/models"
 )
 
-func CheckAuthorizedNetworkSliceInfo(target AuthorizedNetworkSliceInfo, expectList []AuthorizedNetworkSliceInfo) bool {
+func CheckAuthorizedNetworkSliceInfo(target models.AuthorizedNetworkSliceInfo, expectList []models.AuthorizedNetworkSliceInfo) bool {
 	for _, expectElement := range expectList {
 		if reflect.DeepEqual(target, expectElement) {
 			return true

@@ -64,7 +64,7 @@ func CheckConfigVersion() error {
 	currentVersion := NssfConfig.GetVersion()
 
 	if currentVersion != NSSF_EXPECTED_CONFIG_VERSION {
-		return fmt.Errorf("config version is [%s], but expected is [%s].",
+		return fmt.Errorf("config version is [%s], but expected is [%s]",
 			currentVersion, NSSF_EXPECTED_CONFIG_VERSION)
 	}
 

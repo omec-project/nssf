@@ -30,7 +30,7 @@ func useDefaultSubscribedSnssai(
 		mappingOfSnssai = util.GetMappingOfPlmnFromConfig(*param.HomePlmnId)
 
 		if mappingOfSnssai == nil {
-			logger.Nsselection.Warnf("No S-NSSAI mapping of UE's HPLMN %+v in NSSF configuration", *param.HomePlmnId)
+			logger.Nsselection.Warnf("no S-NSSAI mapping of UE's HPLMN %+v in NSSF configuration", *param.HomePlmnId)
 			return
 		}
 	}
@@ -45,7 +45,7 @@ func useDefaultSubscribedSnssai(
 				targetMapping, found := util.FindMappingWithHomeSnssai(*subscribedSnssai.SubscribedSnssai, mappingOfSnssai)
 
 				if !found {
-					logger.Nsselection.Warnf("No mapping of Subscribed S-NSSAI %+v in PLMN %+v in NSSF configuration",
+					logger.Nsselection.Warnf("no mapping of Subscribed S-NSSAI %+v in PLMN %+v in NSSF configuration",
 						*subscribedSnssai.SubscribedSnssai,
 						*param.HomePlmnId)
 					continue
@@ -94,7 +94,7 @@ func useDefaultConfiguredNssai(
 	for _, requestedSnssai := range param.SliceInfoRequestForRegistration.RequestedNssai {
 		// Check whether the Default Configured S-NSSAI is standard, which could be commonly decided by all roaming partners
 		if !util.CheckStandardSnssai(requestedSnssai) {
-			logger.Nsselection.Infof("S-NSSAI %+v in Requested NSSAI which based on Default Configured NSSAI is not standard",
+			logger.Nsselection.Infof("s-nssai %+v in Requested NSSAI which based on Default Configured NSSAI is not standard",
 				requestedSnssai)
 			continue
 		}
@@ -123,7 +123,7 @@ func setConfiguredNssai(
 		mappingOfSnssai = util.GetMappingOfPlmnFromConfig(*param.HomePlmnId)
 
 		if mappingOfSnssai == nil {
-			logger.Nsselection.Warnf("No S-NSSAI mapping of UE's HPLMN %+v in NSSF configuration", *param.HomePlmnId)
+			logger.Nsselection.Warnf("no S-NSSAI mapping of UE's HPLMN %+v in NSSF configuration", *param.HomePlmnId)
 			return
 		}
 	}
@@ -134,7 +134,7 @@ func setConfiguredNssai(
 			targetMapping, found := util.FindMappingWithHomeSnssai(*subscribedSnssai.SubscribedSnssai, mappingOfSnssai)
 
 			if !found {
-				logger.Nsselection.Warnf("No mapping of Subscribed S-NSSAI %+v in PLMN %+v in NSSF configuration",
+				logger.Nsselection.Warnf("no mapping of Subscribed S-NSSAI %+v in PLMN %+v in NSSF configuration",
 					*subscribedSnssai.SubscribedSnssai,
 					*param.HomePlmnId)
 				continue
@@ -222,7 +222,7 @@ func nsselectionForRegistration(param plugin.NsselectionQueryParameter,
 				targetMapping, found := util.FindMappingWithHomeSnssai(*subscribedSnssai.SubscribedSnssai, mappingOfSnssai)
 
 				if !found {
-					logger.Nsselection.Warnf("No mapping of Subscribed S-NSSAI %+v in PLMN %+v in NSSF configuration",
+					logger.Nsselection.Warnf("no mapping of Subscribed S-NSSAI %+v in PLMN %+v in NSSF configuration",
 						*subscribedSnssai.SubscribedSnssai,
 						*param.HomePlmnId)
 					continue
@@ -282,7 +282,7 @@ func nsselectionForRegistration(param plugin.NsselectionQueryParameter,
 			status = http.StatusOK
 			return status
 		} else {
-			logger.Nsselection.Warnf("No S-NSSAI mapping of UE's HPLMN %+v in NSSF configuration", *param.HomePlmnId)
+			logger.Nsselection.Warnf("no S-NSSAI mapping of UE's HPLMN %+v in NSSF configuration", *param.HomePlmnId)
 
 			status = http.StatusOK
 			return status
@@ -290,8 +290,7 @@ func nsselectionForRegistration(param plugin.NsselectionQueryParameter,
 	}
 
 	checkInvalidRequestedNssai := false
-	if param.SliceInfoRequestForRegistration.RequestedNssai != nil &&
-		len(param.SliceInfoRequestForRegistration.RequestedNssai) != 0 {
+	if len(param.SliceInfoRequestForRegistration.RequestedNssai) != 0 {
 		// Requested NSSAI is provided
 		// Verify which S-NSSAI(s) in the Requested NSSAI are permitted based on comparing the Subscribed S-NSSAI(s)
 
