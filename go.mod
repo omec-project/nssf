@@ -7,7 +7,7 @@ require (
 	github.com/evanphx/json-patch v5.9.0+incompatible
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
-	github.com/omec-project/config5g v1.4.3
+	github.com/omec-project/config5g v1.4.4
 	github.com/omec-project/openapi v1.2.0
 	github.com/omec-project/util v1.1.0
 	github.com/prometheus/client_golang v1.20.3
@@ -62,7 +62,7 @@ require (
 	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240604185151-ef581f913117 // indirect
-	google.golang.org/grpc v1.66.0 // indirect
+	google.golang.org/grpc v1.66.2 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/h2non/gock.v1 v1.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
