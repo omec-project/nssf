@@ -18,7 +18,6 @@ import (
 	"net/http"
 
 	"github.com/omec-project/nssf/logger"
-	stats "github.com/omec-project/nssf/metrics"
 	"github.com/omec-project/nssf/plugin"
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/util/httpwrapper"
@@ -34,10 +33,8 @@ func HandleNSSAIAvailabilityDelete(request *httpwrapper.Request) *httpwrapper.Re
 	problemDetails := NSSAIAvailabilityDeleteProcedure(nfID)
 
 	if problemDetails != nil {
-		stats.IncrementNssfNssaiAvailabilityStats("delete", nfID, "FAILURE")
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
-	stats.IncrementNssfNssaiAvailabilityStats("delete", nfID, "SUCCESS")
 	return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 }
 
@@ -57,17 +54,14 @@ func HandleNSSAIAvailabilityPatch(request *httpwrapper.Request) *httpwrapper.Res
 	response, problemDetails := NSSAIAvailabilityPatchProcedure(nssaiAvailabilityUpdateInfo, nfID)
 
 	if response != nil {
-		stats.IncrementNssfNssaiAvailabilityStats("patch", nfID, "SUCCESS")
 		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
-		stats.IncrementNssfNssaiAvailabilityStats("patch", nfID, "FAILURE")
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	stats.IncrementNssfNssaiAvailabilityStats("patch", nfID, "FAILURE")
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
@@ -82,16 +76,13 @@ func HandleNSSAIAvailabilityPut(request *httpwrapper.Request) *httpwrapper.Respo
 	response, problemDetails := NSSAIAvailabilityPutProcedure(nssaiAvailabilityInfo, nfID)
 
 	if response != nil {
-		stats.IncrementNssfNssaiAvailabilityStats("put", nfID, "SUCCESS")
 		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
-		stats.IncrementNssfNssaiAvailabilityStats("put", nfID, "FAILURE")
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	stats.IncrementNssfNssaiAvailabilityStats("put", nfID, "FAILURE")
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }

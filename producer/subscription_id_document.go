@@ -19,7 +19,6 @@ import (
 	"reflect"
 
 	"github.com/omec-project/nssf/logger"
-	stats "github.com/omec-project/nssf/metrics"
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/util/httpwrapper"
 )
@@ -33,16 +32,13 @@ func HandleNSSAIAvailabilityUnsubscribe(request *httpwrapper.Request) *httpwrapp
 	problemDetails := NSSAIAvailabilityUnsubscribeProcedure(subscriptionID)
 
 	if problemDetails == nil {
-		stats.IncrementNssfNssaiAvailabilitySubscriptionsStats("unsubscribe", "", request.Params["nfId"], "SUCCESS")
 		return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 	} else if reflect.DeepEqual(*problemDetails, models.ProblemDetails{}) {
 		problemDetails = &models.ProblemDetails{
 			Status: http.StatusForbidden,
 			Cause:  "UNSPECIFIED",
 		}
-		stats.IncrementNssfNssaiAvailabilitySubscriptionsStats("unsubscribe", "", request.Params["nfId"], "FAILURE")
 		return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 	}
-	stats.IncrementNssfNssaiAvailabilitySubscriptionsStats("unsubscribe", "", request.Params["nfId"], "FAILURE")
 	return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 }
