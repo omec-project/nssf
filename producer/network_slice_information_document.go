@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/omec-project/nssf/logger"
+	stats "github.com/omec-project/nssf/metrics"
 	"github.com/omec-project/nssf/plugin"
 	"github.com/omec-project/nssf/util"
 	"github.com/omec-project/openapi/models"
@@ -101,15 +102,21 @@ func HandleNSSelectionGet(request *httpwrapper.Request) *httpwrapper.Response {
 
 	response, problemDetails := NSSelectionGetProcedure(query)
 
+	nfType := GetNfTypeFromQueryParameters(query)
+	nfId := GetNfIdFromQueryParameters(query)
+
 	if response != nil {
+		stats.IncrementNssfNsSelectionsStats(nfType, nfId, "SUCCESS")
 		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
+		stats.IncrementNssfNsSelectionsStats(nfType, nfId, "FAILURE")
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
+	stats.IncrementNssfNsSelectionsStats(nfType, nfId, "FAILURE")
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
@@ -163,4 +170,18 @@ func NSSelectionGetProcedure(query url.Values) (*models.AuthorizedNetworkSliceIn
 	} else {
 		return response, problemDetails
 	}
+}
+
+func GetNfTypeFromQueryParameters(query url.Values) (nfType string) {
+	if query.Get("nf-type") != "" {
+		return query.Get("nf-type")
+	}
+	return "UNKNOWN_NF"
+}
+
+func GetNfIdFromQueryParameters(query url.Values) (nfId string) {
+	if query.Get("nf-id") != "" {
+		return query.Get("nf-id")
+	}
+	return "UNKNOWN_NF_ID"
 }

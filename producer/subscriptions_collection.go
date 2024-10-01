@@ -18,6 +18,7 @@ import (
 	"net/http"
 
 	"github.com/omec-project/nssf/logger"
+	stats "github.com/omec-project/nssf/metrics"
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/util/httpwrapper"
 )
@@ -34,8 +35,10 @@ func HandleNSSAIAvailabilityPost(request *httpwrapper.Request) *httpwrapper.Resp
 
 	if response != nil {
 		// TODO: Based on TS 29.531 5.3.2.3.1, add location header
+		stats.IncrementNssfNssaiAvailabilitySubscriptionsStats("subscribe", "", request.Params["nfId"], "SUCCESS")
 		return httpwrapper.NewResponse(http.StatusCreated, nil, response)
 	} else if problemDetails != nil {
+		stats.IncrementNssfNssaiAvailabilitySubscriptionsStats("subscribe", "", request.Params["nfId"], "FAILURE")
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 	problemDetails = &models.ProblemDetails{
