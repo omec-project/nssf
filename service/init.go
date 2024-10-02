@@ -30,11 +30,11 @@ import (
 	"github.com/omec-project/nssf/util"
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/util/http2_util"
-	logger_util "github.com/omec-project/util/logger"
+	utilLogger "github.com/omec-project/util/logger"
 	"github.com/omec-project/util/path_util"
-	pathUtilLogger "github.com/omec-project/util/path_util/logger"
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type NSSF struct{}
@@ -59,7 +59,7 @@ var nssfCLi = []cli.Flag{
 	},
 }
 
-var initLog *logrus.Entry
+var initLog *zap.SugaredLogger
 
 var (
 	KeepAliveTimer      *time.Timer
@@ -103,41 +103,24 @@ func (nssf *NSSF) Initialize(c *cli.Context) error {
 
 func (nssf *NSSF) setLogLevel() {
 	if factory.NssfConfig.Logger == nil {
-		initLog.Warnln("NSSF config without log level setting!!!")
+		initLog.Warnln("NSSF config without log level setting")
 		return
 	}
 
 	if factory.NssfConfig.Logger.NSSF != nil {
 		if factory.NssfConfig.Logger.NSSF.DebugLevel != "" {
-			if level, err := logrus.ParseLevel(factory.NssfConfig.Logger.NSSF.DebugLevel); err != nil {
+			if level, err := zapcore.ParseLevel(factory.NssfConfig.Logger.NSSF.DebugLevel); err != nil {
 				initLog.Warnf("NSSF Log level [%s] is invalid, set to [info] level",
 					factory.NssfConfig.Logger.NSSF.DebugLevel)
-				logger.SetLogLevel(logrus.InfoLevel)
+				logger.SetLogLevel(zap.InfoLevel)
 			} else {
 				initLog.Infof("NSSF Log level is set to [%s] level", level)
 				logger.SetLogLevel(level)
 			}
 		} else {
 			initLog.Infoln("NSSF Log level not set. Default set to [info] level")
-			logger.SetLogLevel(logrus.InfoLevel)
+			logger.SetLogLevel(zap.InfoLevel)
 		}
-		logger.SetReportCaller(factory.NssfConfig.Logger.NSSF.ReportCaller)
-	}
-
-	if factory.NssfConfig.Logger.PathUtil != nil {
-		if factory.NssfConfig.Logger.PathUtil.DebugLevel != "" {
-			if level, err := logrus.ParseLevel(factory.NssfConfig.Logger.PathUtil.DebugLevel); err != nil {
-				pathUtilLogger.PathLog.Warnf("PathUtil Log level [%s] is invalid, set to [info] level",
-					factory.NssfConfig.Logger.PathUtil.DebugLevel)
-				pathUtilLogger.SetLogLevel(logrus.InfoLevel)
-			} else {
-				pathUtilLogger.SetLogLevel(level)
-			}
-		} else {
-			pathUtilLogger.PathLog.Warnln("PathUtil Log level not set. Default set to [info] level")
-			pathUtilLogger.SetLogLevel(logrus.InfoLevel)
-		}
-		pathUtilLogger.SetReportCaller(factory.NssfConfig.Logger.PathUtil.ReportCaller)
 	}
 }
 
@@ -155,9 +138,9 @@ func (nssf *NSSF) FilterCli(c *cli.Context) (args []string) {
 }
 
 func (nssf *NSSF) Start() {
-	initLog.Infoln("Server started")
+	initLog.Infoln("server started")
 
-	router := logger_util.NewGinWithLogrus(logger.GinLog)
+	router := utilLogger.NewGinWithZap(logger.GinLog)
 
 	nssaiavailability.AddService(router)
 	nsselection.AddService(router)
@@ -180,12 +163,12 @@ func (nssf *NSSF) Start() {
 	server, err := http2_util.NewServer(addr, util.NSSF_LOG_PATH, router)
 
 	if server == nil {
-		initLog.Errorf("Initialize HTTP server failed: %+v", err)
+		initLog.Errorf("initialize HTTP server failed: %+v", err)
 		return
 	}
 
 	if err != nil {
-		initLog.Warnf("Initialize HTTP server: +%v", err)
+		initLog.Warnf("initialize HTTP server: +%v", err)
 	}
 
 	serverScheme := factory.NssfConfig.Configuration.Sbi.Scheme
@@ -201,9 +184,9 @@ func (nssf *NSSF) Start() {
 }
 
 func (nssf *NSSF) Exec(c *cli.Context) error {
-	initLog.Traceln("args:", c.String("nssfcfg"))
+	initLog.Debugln("args:", c.String("nssfcfg"))
 	args := nssf.FilterCli(c)
-	initLog.Traceln("filter: ", args)
+	initLog.Debugln("filter:", args)
 	command := exec.Command("./nssf", args...)
 
 	stdout, err := command.StdoutPipe()
@@ -216,7 +199,7 @@ func (nssf *NSSF) Exec(c *cli.Context) error {
 	go func() {
 		in := bufio.NewScanner(stdout)
 		for in.Scan() {
-			fmt.Println(in.Text())
+			initLog.Infoln(in.Text())
 		}
 		wg.Done()
 	}()
@@ -228,14 +211,14 @@ func (nssf *NSSF) Exec(c *cli.Context) error {
 	go func() {
 		in := bufio.NewScanner(stderr)
 		for in.Scan() {
-			fmt.Println(in.Text())
+			initLog.Infoln(in.Text())
 		}
 		wg.Done()
 	}()
 
 	go func() {
 		if err = command.Start(); err != nil {
-			fmt.Printf("NSSF Start error: %v", err)
+			initLog.Errorf("NSSF Start error: %v", err)
 		}
 		wg.Done()
 	}()
@@ -246,18 +229,18 @@ func (nssf *NSSF) Exec(c *cli.Context) error {
 }
 
 func (nssf *NSSF) Terminate() {
-	logger.InitLog.Infof("Terminating NSSF...")
+	logger.InitLog.Infoln("terminating NSSF...")
 	// deregister with NRF
 	problemDetails, err := consumer.SendDeregisterNFInstance()
 	if problemDetails != nil {
-		logger.InitLog.Errorf("Deregister NF instance Failed Problem[%+v]", problemDetails)
+		logger.InitLog.Errorf("deregister NF instance Failed Problem[%+v]", problemDetails)
 	} else if err != nil {
-		logger.InitLog.Errorf("Deregister NF instance Error[%+v]", err)
+		logger.InitLog.Errorf("deregister NF instance Error[%+v]", err)
 	} else {
-		logger.InitLog.Infof("Deregister from NRF successfully")
+		logger.InitLog.Infoln("deregister from NRF successfully")
 	}
 
-	logger.InitLog.Infof("NSSF terminated")
+	logger.InitLog.Infoln("NSSF terminated")
 }
 
 func (nssf *NSSF) StartKeepAliveTimer(nfProfile models.NfProfile) {
@@ -267,14 +250,14 @@ func (nssf *NSSF) StartKeepAliveTimer(nfProfile models.NfProfile) {
 	if nfProfile.HeartBeatTimer == 0 {
 		nfProfile.HeartBeatTimer = 60
 	}
-	logger.InitLog.Infof("Started KeepAlive Timer: %v sec", nfProfile.HeartBeatTimer)
+	logger.InitLog.Infof("started KeepAlive Timer: %v sec", nfProfile.HeartBeatTimer)
 	// AfterFunc starts timer and waits for KeepAliveTimer to elapse and then calls nssf.UpdateNF function
 	KeepAliveTimer = time.AfterFunc(time.Duration(nfProfile.HeartBeatTimer)*time.Second, nssf.UpdateNF)
 }
 
 func (nssf *NSSF) StopKeepAliveTimer() {
 	if KeepAliveTimer != nil {
-		logger.InitLog.Infof("Stopped KeepAlive Timer.")
+		logger.InitLog.Infoln("stopped KeepAlive Timer")
 		KeepAliveTimer.Stop()
 		KeepAliveTimer = nil
 	}
@@ -284,7 +267,7 @@ func (nssf *NSSF) BuildAndSendRegisterNFInstance() (models.NfProfile, error) {
 	self := context.NSSF_Self()
 	profile, err := consumer.BuildNFProfile(self)
 	if err != nil {
-		initLog.Errorf("Build NSSF Profile Error: %v", err)
+		initLog.Errorf("build NSSF Profile Error: %v", err)
 		return profile, err
 	}
 	initLog.Infof("Pcf Profile Registering to NRF: %v", profile)
@@ -298,7 +281,7 @@ func (nssf *NSSF) UpdateNF() {
 	KeepAliveTimerMutex.Lock()
 	defer KeepAliveTimerMutex.Unlock()
 	if KeepAliveTimer == nil {
-		initLog.Warnf("KeepAlive timer has been stopped.")
+		initLog.Warnln("keepAlive timer has been stopped")
 		return
 	}
 	// setting default value 60 sec
@@ -334,7 +317,7 @@ func (nssf *NSSF) UpdateNF() {
 		// use hearbeattimer value with received timer value from NRF
 		heartBeatTimer = nfProfile.HeartBeatTimer
 	}
-	logger.InitLog.Debugf("Restarted KeepAlive Timer: %v sec", heartBeatTimer)
+	logger.InitLog.Debugf("restarted KeepAlive Timer: %v sec", heartBeatTimer)
 	// restart timer with received HeartBeatTimer value
 	KeepAliveTimer = time.AfterFunc(time.Duration(heartBeatTimer)*time.Second, nssf.UpdateNF)
 }
@@ -345,7 +328,7 @@ func (nssf *NSSF) registerNF() {
 		self := context.NSSF_Self()
 		profile, err := consumer.BuildNFProfile(self)
 		if err != nil {
-			logger.InitLog.Errorf("Build profile failed.")
+			logger.InitLog.Errorln("build profile failed")
 		}
 
 		var newNrfUri string
@@ -354,10 +337,10 @@ func (nssf *NSSF) registerNF() {
 		prof, newNrfUri, self.NfId, err = consumer.SendRegisterNFInstance(self.NrfUri, profile.NfInstanceId, profile)
 		if err == nil {
 			nssf.StartKeepAliveTimer(prof)
-			logger.CfgLog.Infof("Sent Register NF Instance with updated profile")
+			logger.CfgLog.Infoln("sent register NFInstance with updated profile")
 			self.NrfUri = newNrfUri
 		} else {
-			initLog.Errorf("Send Register NFInstance Error[%s]", err.Error())
+			initLog.Errorf("send register NFInstance Error[%s]", err.Error())
 		}
 	}
 }

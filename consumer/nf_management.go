@@ -13,7 +13,6 @@ package consumer
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -53,7 +52,6 @@ var SendRegisterNFInstance = func(nrfUri, nfInstanceId string, profile models.Nf
 	for {
 		prof, res, err = apiClient.NFInstanceIDDocumentApi.RegisterNFInstance(context.TODO(), nfInstanceId, profile)
 		if err != nil || res == nil {
-			// TODO : add log
 			logger.ConsumerLog.Errorf("NSSF register to NRF Error[%s]", err.Error())
 			time.Sleep(waitTime * time.Second)
 			continue
@@ -74,14 +72,14 @@ var SendRegisterNFInstance = func(nrfUri, nfInstanceId string, profile models.Nf
 			retrieveNfInstanceId = resourceUri[strings.LastIndex(resourceUri, "/")+1:]
 			break
 		} else {
-			fmt.Println("NRF return wrong status code", status)
+			logger.ConsumerLog.Errorln("NRF return wrong status code", status)
 		}
 	}
 	return prof, resourceNrfUri, retrieveNfInstanceId, err
 }
 
 var SendUpdateNFInstance = func(patchItem []models.PatchItem) (nfProfile models.NfProfile, problemDetails *models.ProblemDetails, err error) {
-	logger.ConsumerLog.Debugf("Send Update NFInstance")
+	logger.ConsumerLog.Debugln("send Update NFInstance")
 
 	nssfSelf := nssf_context.NSSF_Self()
 	configuration := Nnrf_NFManagement.NewConfiguration()
@@ -111,7 +109,7 @@ var SendUpdateNFInstance = func(patchItem []models.PatchItem) (nfProfile models.
 }
 
 func SendDeregisterNFInstance() (*models.ProblemDetails, error) {
-	logger.AppLog.Infof("Send Deregister NFInstance")
+	logger.AppLog.Infoln("send Deregister NFInstance")
 
 	nssfSelf := nssf_context.NSSF_Self()
 	// Set client and set url
