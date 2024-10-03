@@ -20,13 +20,13 @@ import (
 
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/nssf/service"
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+	"go.uber.org/zap"
 )
 
 var NSSF = &service.NSSF{}
 
-var appLog *logrus.Entry
+var appLog *zap.SugaredLogger
 
 func init() {
 	appLog = logger.AppLog
@@ -35,7 +35,7 @@ func init() {
 func main() {
 	app := cli.NewApp()
 	app.Name = "nssf"
-	fmt.Print(app.Name, "\n")
+	appLog.Infoln(app.Name)
 	app.Usage = "-free5gccfg common configuration file -nssfcfg nssf configuration file"
 	app.Action = action
 	app.Flags = NSSF.GetCliCmd()
