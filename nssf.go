@@ -21,27 +21,20 @@ import (
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/nssf/service"
 	"github.com/urfave/cli"
-	"go.uber.org/zap"
 )
 
 var NSSF = &service.NSSF{}
 
-var appLog *zap.SugaredLogger
-
-func init() {
-	appLog = logger.AppLog
-}
-
 func main() {
 	app := cli.NewApp()
 	app.Name = "nssf"
-	appLog.Infoln(app.Name)
+	logger.AppLog.Infoln(app.Name)
 	app.Usage = "-free5gccfg common configuration file -nssfcfg nssf configuration file"
 	app.Action = action
 	app.Flags = NSSF.GetCliCmd()
 
 	if err := app.Run(os.Args); err != nil {
-		appLog.Errorf("NSSF Run Error: %v", err)
+		logger.AppLog.Errorf("NSSF Run Error: %v", err)
 	}
 }
 
