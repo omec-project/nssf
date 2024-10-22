@@ -59,16 +59,10 @@ var nssfCLi = []cli.Flag{
 	},
 }
 
-var initLog *zap.SugaredLogger
-
 var (
 	KeepAliveTimer      *time.Timer
 	KeepAliveTimerMutex sync.Mutex
 )
-
-func init() {
-	initLog = logger.InitLog
-}
 
 func (*NSSF) GetCliCmd() (flags []cli.Flag) {
 	return nssfCLi
@@ -103,22 +97,22 @@ func (nssf *NSSF) Initialize(c *cli.Context) error {
 
 func (nssf *NSSF) setLogLevel() {
 	if factory.NssfConfig.Logger == nil {
-		initLog.Warnln("NSSF config without log level setting")
+		logger.InitLog.Warnln("NSSF config without log level setting")
 		return
 	}
 
 	if factory.NssfConfig.Logger.NSSF != nil {
 		if factory.NssfConfig.Logger.NSSF.DebugLevel != "" {
 			if level, err := zapcore.ParseLevel(factory.NssfConfig.Logger.NSSF.DebugLevel); err != nil {
-				initLog.Warnf("NSSF Log level [%s] is invalid, set to [info] level",
+				logger.InitLog.Warnf("NSSF Log level [%s] is invalid, set to [info] level",
 					factory.NssfConfig.Logger.NSSF.DebugLevel)
 				logger.SetLogLevel(zap.InfoLevel)
 			} else {
-				initLog.Infof("NSSF Log level is set to [%s] level", level)
+				logger.InitLog.Infof("NSSF Log level is set to [%s] level", level)
 				logger.SetLogLevel(level)
 			}
 		} else {
-			initLog.Infoln("NSSF Log level not set. Default set to [info] level")
+			logger.InitLog.Infoln("NSSF Log level not set. Default set to [info] level")
 			logger.SetLogLevel(zap.InfoLevel)
 		}
 	}
@@ -138,7 +132,7 @@ func (nssf *NSSF) FilterCli(c *cli.Context) (args []string) {
 }
 
 func (nssf *NSSF) Start() {
-	initLog.Infoln("server started")
+	logger.InitLog.Infoln("server started")
 
 	router := utilLogger.NewGinWithZap(logger.GinLog)
 
@@ -163,12 +157,12 @@ func (nssf *NSSF) Start() {
 	server, err := http2_util.NewServer(addr, util.NSSF_LOG_PATH, router)
 
 	if server == nil {
-		initLog.Errorf("initialize HTTP server failed: %+v", err)
+		logger.InitLog.Errorf("initialize HTTP server failed: %+v", err)
 		return
 	}
 
 	if err != nil {
-		initLog.Warnf("initialize HTTP server: +%v", err)
+		logger.InitLog.Warnf("initialize HTTP server: +%v", err)
 	}
 
 	serverScheme := factory.NssfConfig.Configuration.Sbi.Scheme
@@ -179,19 +173,19 @@ func (nssf *NSSF) Start() {
 	}
 
 	if err != nil {
-		initLog.Fatalf("HTTP server setup failed: %+v", err)
+		logger.InitLog.Fatalf("HTTP server setup failed: %+v", err)
 	}
 }
 
 func (nssf *NSSF) Exec(c *cli.Context) error {
-	initLog.Debugln("args:", c.String("nssfcfg"))
+	logger.InitLog.Debugln("args:", c.String("nssfcfg"))
 	args := nssf.FilterCli(c)
-	initLog.Debugln("filter:", args)
+	logger.InitLog.Debugln("filter:", args)
 	command := exec.Command("./nssf", args...)
 
 	stdout, err := command.StdoutPipe()
 	if err != nil {
-		initLog.Fatalln(err)
+		logger.InitLog.Fatalln(err)
 	}
 	wg := sync.WaitGroup{}
 	goRoutines := 3
@@ -199,26 +193,26 @@ func (nssf *NSSF) Exec(c *cli.Context) error {
 	go func() {
 		in := bufio.NewScanner(stdout)
 		for in.Scan() {
-			initLog.Infoln(in.Text())
+			logger.InitLog.Infoln(in.Text())
 		}
 		wg.Done()
 	}()
 
 	stderr, err := command.StderrPipe()
 	if err != nil {
-		initLog.Fatalln(err)
+		logger.InitLog.Fatalln(err)
 	}
 	go func() {
 		in := bufio.NewScanner(stderr)
 		for in.Scan() {
-			initLog.Infoln(in.Text())
+			logger.InitLog.Infoln(in.Text())
 		}
 		wg.Done()
 	}()
 
 	go func() {
 		if err = command.Start(); err != nil {
-			initLog.Errorf("NSSF Start error: %v", err)
+			logger.InitLog.Errorf("NSSF start error: %v", err)
 		}
 		wg.Done()
 	}()
@@ -267,10 +261,10 @@ func (nssf *NSSF) BuildAndSendRegisterNFInstance() (models.NfProfile, error) {
 	self := context.NSSF_Self()
 	profile, err := consumer.BuildNFProfile(self)
 	if err != nil {
-		initLog.Errorf("build NSSF Profile Error: %v", err)
+		logger.InitLog.Errorf("build NSSF Profile Error: %v", err)
 		return profile, err
 	}
-	initLog.Infof("Pcf Profile Registering to NRF: %v", profile)
+	logger.InitLog.Infof("NSSF Profile Registering to NRF: %v", profile)
 	// Indefinite attempt to register until success
 	profile, _, self.NfId, err = consumer.SendRegisterNFInstance(self.NrfUri, self.NfId, profile)
 	return profile, err
@@ -281,7 +275,7 @@ func (nssf *NSSF) UpdateNF() {
 	KeepAliveTimerMutex.Lock()
 	defer KeepAliveTimerMutex.Unlock()
 	if KeepAliveTimer == nil {
-		initLog.Warnln("keepAlive timer has been stopped")
+		logger.InitLog.Warnln("keepAlive timer has been stopped")
 		return
 	}
 	// setting default value 60 sec
@@ -295,21 +289,21 @@ func (nssf *NSSF) UpdateNF() {
 	patchItem = append(patchItem, pitem)
 	nfProfile, problemDetails, err := consumer.SendUpdateNFInstance(patchItem)
 	if problemDetails != nil {
-		initLog.Errorf("NSSF update to NRF ProblemDetails[%v]", problemDetails)
+		logger.InitLog.Errorf("NSSF update to NRF ProblemDetails[%v]", problemDetails)
 		// 5xx response from NRF, 404 Not Found, 400 Bad Request
 		if (problemDetails.Status >= 500 && problemDetails.Status <= 599) ||
 			problemDetails.Status == 404 || problemDetails.Status == 400 {
 			// register with NRF full profile
 			nfProfile, err = nssf.BuildAndSendRegisterNFInstance()
 			if err != nil {
-				initLog.Errorf("NSSF update to NRF Error[%s]", err.Error())
+				logger.InitLog.Errorf("NSSF update to NRF Error[%s]", err.Error())
 			}
 		}
 	} else if err != nil {
-		initLog.Errorf("NSSF update to NRF Error[%s]", err.Error())
+		logger.InitLog.Errorf("NSSF update to NRF Error[%s]", err.Error())
 		nfProfile, err = nssf.BuildAndSendRegisterNFInstance()
 		if err != nil {
-			initLog.Errorf("NSSF update to NRF Error[%s]", err.Error())
+			logger.InitLog.Errorf("NSSF update to NRF Error[%s]", err.Error())
 		}
 	}
 
@@ -324,7 +318,7 @@ func (nssf *NSSF) UpdateNF() {
 
 func (nssf *NSSF) registerNF() {
 	for msg := range factory.ConfigPodTrigger {
-		initLog.Infof("Minimum configuration from config pod available %v", msg)
+		logger.InitLog.Infof("minimum configuration from config pod available %v", msg)
 		self := context.NSSF_Self()
 		profile, err := consumer.BuildNFProfile(self)
 		if err != nil {
@@ -340,7 +334,7 @@ func (nssf *NSSF) registerNF() {
 			logger.CfgLog.Infoln("sent register NFInstance with updated profile")
 			self.NrfUri = newNrfUri
 		} else {
-			initLog.Errorf("send register NFInstance Error[%s]", err.Error())
+			logger.CfgLog.Errorf("send register NFInstance Error[%s]", err.Error())
 		}
 	}
 }

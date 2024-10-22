@@ -19,9 +19,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-
-	utilLogger "github.com/omec-project/util/logger"
 	"github.com/omec-project/nssf/logger"
+	utilLogger "github.com/omec-project/util/logger"
 )
 
 // Route is the information for every URI.
