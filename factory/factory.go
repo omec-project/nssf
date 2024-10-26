@@ -46,7 +46,7 @@ func InitConfigFactory(f string) error {
 			logger.CfgLog.Infoln("MANAGED_BY_CONFIG_POD is true")
 		} else {
 			go func() {
-				logger.CfgLog.Infoln("Use helm chart config")
+				logger.CfgLog.Infoln("use helm chart config")
 				ConfigPodTrigger <- true
 			}()
 		}

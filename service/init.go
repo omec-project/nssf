@@ -103,7 +103,7 @@ func (nssf *NSSF) Initialize(c *cli.Context) error {
 }
 
 // manageGrpcClient connects the config pod GRPC server and subscribes the config changes.
-// Then it updates UDR configuration.
+// Then it updates NSSF configuration.
 func manageGrpcClient(webuiUri string) {
 	var configChannel chan *protos.NetworkSliceResponse
 	var client grpcClient.ConfClient
@@ -139,13 +139,13 @@ func manageGrpcClient(webuiUri string) {
 				configChannel = client.PublishOnConfigChange(true, stream)
 				logger.InitLog.Infoln("PublishOnConfigChange is triggered.")
 				go factory.NssfConfig.UpdateConfig(configChannel)
-				logger.InitLog.Infoln("UDR updateConfig is triggered.")
+				logger.InitLog.Infoln("NSSF updateConfig is triggered.")
 			}
 		} else {
 			client, err = grpcClient.ConnectToConfigServer(webuiUri)
 			stream = nil
 			configChannel = nil
-			logger.InitLog.Infoln("Connecting to config server.")
+			logger.InitLog.Infoln("connecting to config server.")
 			if err != nil {
 				logger.InitLog.Errorf("%+v", err)
 			}
