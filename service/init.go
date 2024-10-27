@@ -97,8 +97,13 @@ func (nssf *NSSF) Initialize(c *cli.Context) error {
 	if os.Getenv("MANAGED_BY_CONFIG_POD") == "true" {
 		logger.InitLog.Infoln("MANAGED_BY_CONFIG_POD is true")
 		go manageGrpcClient(factory.NssfConfig.Configuration.WebuiUri)
+	} else {
+		go func() {
+			logger.CfgLog.Infoln("use helm chart config")
+			factory.ConfigPodTrigger <- true
+		}()
 	}
-
+	factory.Configured = true
 	return nil
 }
 

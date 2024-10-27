@@ -42,17 +42,7 @@ func InitConfigFactory(f string) error {
 		if NssfConfig.Configuration.WebuiUri == "" {
 			NssfConfig.Configuration.WebuiUri = "webui:9876"
 		}
-		if os.Getenv("MANAGED_BY_CONFIG_POD") == "true" {
-			logger.CfgLog.Infoln("MANAGED_BY_CONFIG_POD is true")
-		} else {
-			go func() {
-				logger.CfgLog.Infoln("use helm chart config")
-				ConfigPodTrigger <- true
-			}()
-		}
-		Configured = true
 	}
-
 	return nil
 }
 
