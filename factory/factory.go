@@ -15,7 +15,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/omec-project/config5g/proto/client"
 	"github.com/omec-project/nssf/logger"
 	"gopkg.in/yaml.v2"
 )
@@ -43,20 +42,7 @@ func InitConfigFactory(f string) error {
 		if NssfConfig.Configuration.WebuiUri == "" {
 			NssfConfig.Configuration.WebuiUri = "webui:9876"
 		}
-		roc := os.Getenv("MANAGED_BY_CONFIG_POD")
-		if roc == "true" {
-			logger.CfgLog.Infoln("MANAGED_BY_CONFIG_POD is true")
-			commChannel := client.ConfigWatcher(NssfConfig.Configuration.WebuiUri)
-			go NssfConfig.updateConfig(commChannel)
-		} else {
-			go func() {
-				logger.CfgLog.Infoln("Use helm chart config ")
-				ConfigPodTrigger <- true
-			}()
-		}
-		Configured = true
 	}
-
 	return nil
 }
 

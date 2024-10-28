@@ -117,7 +117,7 @@ func init() {
 	ConfigPodTrigger = make(chan bool)
 }
 
-func (c *Config) updateConfig(commChannel chan *protos.NetworkSliceResponse) bool {
+func (c *Config) UpdateConfig(commChannel chan *protos.NetworkSliceResponse) bool {
 	var minConfig bool
 	for rsp := range commChannel {
 		logger.GrpcLog.Infoln("Received updateConfig in the nssf app : ", rsp)

@@ -76,8 +76,8 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32 h1:W6apQkHrMkS0Muv8G/TipAy/FJl/rCYT0+EuS8+Z0z4=
 github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32/go.mod h1:9wM+0iRr9ahx58uYLpLIr5fm8diHn0JbqRycJi6w0Ms=
-github.com/omec-project/config5g v1.5.1 h1:JaVgr76tnjJIb7Uoesv5a9GI72NdOXtCvfukj0/ONio=
-github.com/omec-project/config5g v1.5.1/go.mod h1:o04ZdwGcM7tbGjuT5t/WzYSKLXOSnFl6vH7b6BGAspU=
+github.com/omec-project/config5g v1.5.4 h1:5JMw5Fsr5qyLZpQi3IZQaQPj78QJMFQXDVS3QDMOY9Y=
+github.com/omec-project/config5g v1.5.4/go.mod h1:HOvQtmi79f8cw35AiFHWHDoCTuZbXfMjeFJWgtPbwaI=
 github.com/omec-project/openapi v1.3.1 h1:NCteMRdMtWnMhf1CXYduuLgeu8fEhc/7XO1CiE7fN3Y=
 github.com/omec-project/openapi v1.3.1/go.mod h1:cR6Iharp2TLOzEmskQ/EdCVFZnpKh0zTvUSSuyXAYLE=
 github.com/omec-project/util v1.2.3 h1:h32ZYFT99+fB9VPp1CQUIKwrSP6RtX+PbFDcqmEHmn0=
@@ -143,8 +143,8 @@ google.golang.org/genproto/googleapis/rpc v0.0.0-20240814211410-ddb44dafa142 h1:
 google.golang.org/genproto/googleapis/rpc v0.0.0-20240814211410-ddb44dafa142/go.mod h1:UqMtugtsSgubUsoxbuAoiCXvqvErP7Gf0so0mK9tHxU=
 google.golang.org/grpc v1.67.1 h1:zWnc1Vrcno+lHZCOofnIMvycFcc0QRGIzm9dhnDX68E=
 google.golang.org/grpc v1.67.1/go.mod h1:1gLDyUQU7CTLJI90u3nXZ9ekeghjeM7pTDZlqFNg2AA=
-google.golang.org/protobuf v1.34.2 h1:6xV6lTsCfpGD21XK49h7MhtcApnLqkfYgPcdHftf6hg=
-google.golang.org/protobuf v1.34.2/go.mod h1:qYOHts0dSfpeUzUFpOMr/WGzszTmLH+DiWniOlNbLDw=
+google.golang.org/protobuf v1.35.1 h1:m3LfL6/Ca+fqnjnlqQXNpFPABW1UD7mjh8KO2mKFytA=
+google.golang.org/protobuf v1.35.1/go.mod h1:9fA7Ob0pmnwhb644+1+CVWFRbNajQ6iRojtC/QF5bRE=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c h1:Hei/4ADfdWqJk1ZMxUNpqntNwaWcugrBjAiHlqqRiVk=
 gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c/go.mod h1:JHkPIbrfpd72SG/EVd6muEfDQjcINNoR0C8j2r3qZ4Q=

@@ -81,3 +81,22 @@ docker-push:
 	for target in $(DOCKER_TARGETS); do \
 		docker push ${DOCKER_REGISTRY}${DOCKER_REPOSITORY}5gc-$$target:${DOCKER_TAG}; \
 	done
+
+.coverage:
+	rm -rf $(CURDIR)/.coverage
+	mkdir -p $(CURDIR)/.coverage
+
+test: .coverage
+	docker run --rm -v $(CURDIR):/nssf -w /nssf golang:latest \
+		go test \
+			-failfast \
+			-coverprofile=.coverage/coverage-unit.txt \
+			-covermode=atomic \
+			-v \
+			./ ./...
+
+fmt:
+	@go fmt ./...
+
+golint:
+	@docker run --rm -v $(CURDIR):/app -w /app golangci/golangci-lint:latest golangci-lint run -v --config /app/.golangci.yml
