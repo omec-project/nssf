@@ -42,6 +42,7 @@ func InitConfigFactory(f string) error {
 		if NssfConfig.Configuration.WebuiUri == "" {
 			NssfConfig.Configuration.WebuiUri = "webui:9876"
 		}
+		Configured = true
 	}
 	return nil
 }

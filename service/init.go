@@ -103,7 +103,6 @@ func (nssf *NSSF) Initialize(c *cli.Context) error {
 			factory.ConfigPodTrigger <- true
 		}()
 	}
-	factory.Configured = true
 	return nil
 }
 
