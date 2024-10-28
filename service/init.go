@@ -86,8 +86,6 @@ func (nssf *NSSF) Initialize(c *cli.Context) error {
 		}
 	}
 
-	context.InitNssfContext()
-
 	nssf.setLogLevel()
 
 	if err := factory.CheckConfigVersion(); err != nil {
@@ -103,6 +101,8 @@ func (nssf *NSSF) Initialize(c *cli.Context) error {
 			factory.ConfigPodTrigger <- true
 		}()
 	}
+	factory.Configured = true
+	context.InitNssfContext()
 	return nil
 }
 
