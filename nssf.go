@@ -35,7 +35,7 @@ func main() {
 	app.Flags = NSSF.GetCliCmd()
 
 	if err := app.Run(os.Args); err != nil {
-		logger.AppLog.Errorf("NSSF run error: %v", err)
+		logger.AppLog.Fatalf("NSSF run error: %v", err)
 	}
 }
 
