@@ -16,6 +16,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -29,11 +30,9 @@ import (
 	"github.com/omec-project/nssf/metrics"
 	"github.com/omec-project/nssf/nssaiavailability"
 	"github.com/omec-project/nssf/nsselection"
-	"github.com/omec-project/nssf/util"
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/util/http2_util"
 	utilLogger "github.com/omec-project/util/logger"
-	"github.com/omec-project/util/path_util"
 	"github.com/urfave/cli"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -44,7 +43,7 @@ type NSSF struct{}
 type (
 	// Config information.
 	Config struct {
-		nssfcfg string
+		cfg string
 	}
 )
 
@@ -52,12 +51,9 @@ var config Config
 
 var nssfCLi = []cli.Flag{
 	cli.StringFlag{
-		Name:  "free5gccfg",
-		Usage: "common config file",
-	},
-	cli.StringFlag{
-		Name:  "nssfcfg",
-		Usage: "config file",
+		Name:     "cfg",
+		Usage:    "nssf config file",
+		Required: true,
 	},
 }
 
@@ -72,18 +68,17 @@ func (*NSSF) GetCliCmd() (flags []cli.Flag) {
 
 func (nssf *NSSF) Initialize(c *cli.Context) error {
 	config = Config{
-		nssfcfg: c.String("nssfcfg"),
+		cfg: c.String("cfg"),
 	}
 
-	if config.nssfcfg != "" {
-		if err := factory.InitConfigFactory(config.nssfcfg); err != nil {
-			return err
-		}
-	} else {
-		DefaultNssfConfigPath := path_util.Free5gcPath("free5gc/config/nssfcfg.yaml")
-		if err := factory.InitConfigFactory(DefaultNssfConfigPath); err != nil {
-			return err
-		}
+	absPath, err := filepath.Abs(config.cfg)
+	if err != nil {
+		logger.CfgLog.Errorln(err)
+		return err
+	}
+
+	if err := factory.InitConfigFactory(absPath); err != nil {
+		return err
 	}
 
 	nssf.setLogLevel()
@@ -91,6 +86,8 @@ func (nssf *NSSF) Initialize(c *cli.Context) error {
 	if err := factory.CheckConfigVersion(); err != nil {
 		return err
 	}
+
+	factory.NssfConfig.CfgLocation = absPath
 
 	if os.Getenv("MANAGED_BY_CONFIG_POD") == "true" {
 		logger.InitLog.Infoln("MANAGED_BY_CONFIG_POD is true")
@@ -217,7 +214,8 @@ func (nssf *NSSF) Start() {
 
 	go nssf.registerNF()
 
-	server, err := http2_util.NewServer(addr, util.NSSF_LOG_PATH, router)
+	sslLog := filepath.Dir(factory.NssfConfig.CfgLocation) + "/sslkey.log"
+	server, err := http2_util.NewServer(addr, sslLog, router)
 
 	if server == nil {
 		logger.InitLog.Errorf("initialize HTTP server failed: %+v", err)
@@ -241,10 +239,10 @@ func (nssf *NSSF) Start() {
 }
 
 func (nssf *NSSF) Exec(c *cli.Context) error {
-	logger.InitLog.Debugln("args:", c.String("nssfcfg"))
+	logger.InitLog.Debugln("args:", c.String("cfg"))
 	args := nssf.FilterCli(c)
 	logger.InitLog.Debugln("filter:", args)
-	command := exec.Command("./nssf", args...)
+	command := exec.Command("nssf", args...)
 
 	stdout, err := command.StdoutPipe()
 	if err != nil {
@@ -286,13 +284,13 @@ func (nssf *NSSF) Exec(c *cli.Context) error {
 }
 
 func (nssf *NSSF) Terminate() {
-	logger.InitLog.Infoln("terminating NSSF...")
+	logger.InitLog.Infoln("terminating NSSF")
 	// deregister with NRF
 	problemDetails, err := consumer.SendDeregisterNFInstance()
 	if problemDetails != nil {
 		logger.InitLog.Errorf("deregister NF instance Failed Problem[%+v]", problemDetails)
 	} else if err != nil {
-		logger.InitLog.Errorf("deregister NF instance Error[%+v]", err)
+		logger.InitLog.Errorf("deregister NF instance error[%+v]", err)
 	} else {
 		logger.InitLog.Infoln("deregister from NRF successfully")
 	}
@@ -324,7 +322,7 @@ func (nssf *NSSF) BuildAndSendRegisterNFInstance() (models.NfProfile, error) {
 	self := context.NSSF_Self()
 	profile, err := consumer.BuildNFProfile(self)
 	if err != nil {
-		logger.InitLog.Errorf("build NSSF Profile Error: %v", err)
+		logger.InitLog.Errorf("build NSSF profile error: %v", err)
 		return profile, err
 	}
 	logger.InitLog.Infof("NSSF Profile Registering to NRF: %v", profile)
@@ -359,14 +357,14 @@ func (nssf *NSSF) UpdateNF() {
 			// register with NRF full profile
 			nfProfile, err = nssf.BuildAndSendRegisterNFInstance()
 			if err != nil {
-				logger.InitLog.Errorf("NSSF update to NRF Error[%s]", err.Error())
+				logger.InitLog.Errorf("NSSF update to NRF error[%s]", err.Error())
 			}
 		}
 	} else if err != nil {
-		logger.InitLog.Errorf("NSSF update to NRF Error[%s]", err.Error())
+		logger.InitLog.Errorf("NSSF update to NRF error[%s]", err.Error())
 		nfProfile, err = nssf.BuildAndSendRegisterNFInstance()
 		if err != nil {
-			logger.InitLog.Errorf("NSSF update to NRF Error[%s]", err.Error())
+			logger.InitLog.Errorf("NSSF update to NRF error[%s]", err.Error())
 		}
 	}
 
@@ -374,7 +372,7 @@ func (nssf *NSSF) UpdateNF() {
 		// use hearbeattimer value with received timer value from NRF
 		heartBeatTimer = nfProfile.HeartBeatTimer
 	}
-	logger.InitLog.Debugf("restarted KeepAlive Timer: %v sec", heartBeatTimer)
+	logger.InitLog.Debugf("restarted KeepAlive timer: %v sec", heartBeatTimer)
 	// restart timer with received HeartBeatTimer value
 	KeepAliveTimer = time.AfterFunc(time.Duration(heartBeatTimer)*time.Second, nssf.UpdateNF)
 }
@@ -397,7 +395,7 @@ func (nssf *NSSF) registerNF() {
 			logger.CfgLog.Infoln("sent register NFInstance with updated profile")
 			self.NrfUri = newNrfUri
 		} else {
-			logger.CfgLog.Errorf("send register NFInstance Error[%s]", err.Error())
+			logger.CfgLog.Errorf("send register NFInstance error[%s]", err.Error())
 		}
 	}
 }

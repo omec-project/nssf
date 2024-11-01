@@ -6,8 +6,6 @@
 
 FROM golang:1.23.2-bookworm AS builder
 
-LABEL maintainer="Aether SD-Core <dev@aetherproject.org>"
-
 RUN apt-get update && \
     apt-get -y install --no-install-recommends \
     apt-transport-https \
@@ -27,7 +25,8 @@ RUN make all
 
 FROM alpine:3.20 AS nssf
 
-LABEL description="ONF open source 5G Core Network" \
+LABEL maintainer="Aether SD-Core <dev@aetherproject.org>" \
+    description="ONF open source 5G Core Network" \
     version="Stage 3"
 
 ARG DEBUG_TOOLS
@@ -37,8 +36,5 @@ RUN if [ "$DEBUG_TOOLS" = "true" ]; then \
         apk update && apk add --no-cache -U vim strace net-tools curl netcat-openbsd bind-tools; \
         fi
 
-# Set working dir
-WORKDIR /free5gc/nssf
-
-# Copy executable and default certs
-COPY --from=builder /go/src/nssf/bin/* .
+# Copy executable
+COPY --from=builder /go/src/nssf/bin/* /usr/local/bin/.

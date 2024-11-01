@@ -29,12 +29,13 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "nssf"
 	logger.AppLog.Infoln(app.Name)
-	app.Usage = "-free5gccfg common configuration file -nssfcfg nssf configuration file"
+	app.Usage = "Network Slice Selection Function"
+	app.UsageText = "nssf -cfg <nssf_config_file.conf>"
 	app.Action = action
 	app.Flags = NSSF.GetCliCmd()
 
 	if err := app.Run(os.Args); err != nil {
-		logger.AppLog.Errorf("NSSF Run Error: %v", err)
+		logger.AppLog.Errorf("NSSF run error: %v", err)
 	}
 }
 
