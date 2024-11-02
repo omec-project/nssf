@@ -21,7 +21,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/omec-project/nssf/factory"
 	"github.com/omec-project/nssf/logger"
-	"github.com/omec-project/nssf/util"
 	"github.com/omec-project/openapi/models"
 )
 
@@ -78,8 +77,6 @@ func InitNssfContext() {
 	nssfContext.RegisterIPv4 = nssfConfig.Configuration.Sbi.RegisterIPv4
 	nssfContext.SBIPort = nssfConfig.Configuration.Sbi.Port
 	nssfContext.BindingIPv4 = os.Getenv(nssfConfig.Configuration.Sbi.BindingIPv4)
-	nssfContext.Key = util.NSSF_KEY_PATH // default key path
-	nssfContext.PEM = util.NSSF_PEM_PATH // default PEM path
 	if tls := nssfConfig.Configuration.Sbi.TLS; tls != nil {
 		if tls.Key != "" {
 			nssfContext.Key = tls.Key
@@ -89,11 +86,11 @@ func InitNssfContext() {
 		}
 	}
 	if nssfContext.BindingIPv4 != "" {
-		logger.ContextLog.Info("Parsing ServerIPv4 address from ENV Variable.")
+		logger.ContextLog.Infoln("parsing ServerIPv4 address from ENV Variable")
 	} else {
 		nssfContext.BindingIPv4 = nssfConfig.Configuration.Sbi.BindingIPv4
 		if nssfContext.BindingIPv4 == "" {
-			logger.ContextLog.Warn("Error parsing ServerIPv4 address as string. Using the 0.0.0.0 address as default.")
+			logger.ContextLog.Warnln("error parsing ServerIPv4 address as string. Using the 0.0.0.0 address as default")
 			nssfContext.BindingIPv4 = "0.0.0.0"
 		}
 	}
@@ -103,7 +100,7 @@ func InitNssfContext() {
 	if nssfConfig.Configuration.NrfUri != "" {
 		nssfContext.NrfUri = nssfConfig.Configuration.NrfUri
 	} else {
-		logger.InitLog.Warn("NRF Uri is empty! Using localhost as NRF IPv4 address.")
+		logger.InitLog.Warnln("NRF Uri is empty. Using localhost as NRF IPv4 address")
 		nssfContext.NrfUri = fmt.Sprintf("%s://%s:%d", nssfContext.UriScheme, "127.0.0.1", port)
 	}
 

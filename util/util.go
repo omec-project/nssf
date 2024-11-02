@@ -17,7 +17,6 @@ import (
 	"github.com/omec-project/nssf/factory"
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/openapi/models"
-	"github.com/omec-project/util/path_util"
 )
 
 // Title in Problem Details for NSSF HTTP APIs
@@ -27,16 +26,6 @@ const (
 	UNAUTHORIZED_CONSUMER = "Unauthorized NF service consumer"
 	UNSUPPORTED_RESOURCE  = "Unsupported request resources"
 )
-
-// Path of HTTP2 key and log file
-var (
-	NSSF_LOG_PATH = path_util.Free5gcPath("omec-project/nssfsslkey.log")
-	NSSF_PEM_PATH = path_util.Free5gcPath("free5gc/support/TLS/nssf.pem")
-	NSSF_KEY_PATH = path_util.Free5gcPath("free5gc/support/TLS/nssf.key")
-)
-
-// Default configuration file
-var DEFAULT_CONFIG string = "free5gc/config/nssfcfg.yaml"
 
 // Check if a slice contains an element
 func Contain(target interface{}, slice interface{}) bool {
@@ -60,7 +49,7 @@ func CheckSupportedHplmn(homePlmnId models.PlmnId) bool {
 			return true
 		}
 	}
-	logger.Util.Warnf("No Home PLMN %+v in NSSF configuration", homePlmnId)
+	logger.Util.Warnf("no Home PLMN %+v in NSSF configuration", homePlmnId)
 	return false
 }
 
@@ -75,9 +64,9 @@ func CheckSupportedTa(tai models.Tai) bool {
 	}
 	e, err := json.Marshal(tai)
 	if err != nil {
-		logger.Util.Errorf("Marshal error in CheckSupportedTa: %+v", err)
+		logger.Util.Errorf("marshal error in CheckSupportedTa: %+v", err)
 	}
-	logger.Util.Warnf("No TA %s in NSSF configuration", e)
+	logger.Util.Warnf("no TA %s in NSSF configuration", e)
 	return false
 }
 
@@ -99,7 +88,7 @@ func CheckSupportedSnssaiInPlmn(snssai models.Snssai, plmnId models.PlmnId) bool
 			return false
 		}
 	}
-	logger.Util.Warnf("No supported S-NSSAI list of PLMNID %+v in NSSF configuration", plmnId)
+	logger.Util.Warnf("no supported S-NSSAI list of PLMNID %+v in NSSF configuration", plmnId)
 	return false
 }
 
@@ -131,7 +120,7 @@ func CheckSupportedNssaiInPlmn(nssai []models.Snssai, plmnId models.PlmnId) bool
 			return true
 		}
 	}
-	logger.Util.Warnf("No supported S-NSSAI list of PLMNID %+v in NSSF configuration", plmnId)
+	logger.Util.Warnf("no supported S-NSSAI list of PLMNID %+v in NSSF configuration", plmnId)
 	return false
 }
 
@@ -188,7 +177,7 @@ func CheckSupportedSnssaiInAmfTa(snssai models.Snssai, nfId string, tai models.T
 		}
 	}
 
-	logger.Util.Warnf("No AMF %s in NSSF configuration", nfId)
+	logger.Util.Warnf("no AMF %s in NSSF configuration", nfId)
 	return false
 }
 
@@ -260,9 +249,9 @@ func GetAccessTypeFromConfig(tai models.Tai) models.AccessType {
 	}
 	e, err := json.Marshal(tai)
 	if err != nil {
-		logger.Util.Errorf("Marshal error in GetAccessTypeFromConfig: %+v", err)
+		logger.Util.Errorf("marshal error in GetAccessTypeFromConfig: %+v", err)
 	}
-	logger.Util.Warnf("No TA %s in NSSF configuration", e)
+	logger.Util.Warnf("no TA %s in NSSF configuration", e)
 	return models.AccessType__3_GPP_ACCESS
 }
 
@@ -281,9 +270,9 @@ func GetRestrictedSnssaiListFromConfig(tai models.Tai) []models.RestrictedSnssai
 	}
 	e, err := json.Marshal(tai)
 	if err != nil {
-		logger.Util.Errorf("Marshal error in GetRestrictedSnssaiListFromConfig: %+v", err)
+		logger.Util.Errorf("marshal error in GetRestrictedSnssaiListFromConfig: %+v", err)
 	}
-	logger.Util.Warnf("No TA %s in NSSF configuration", e)
+	logger.Util.Warnf("no TA %s in NSSF configuration", e)
 	return nil
 }
 
@@ -306,7 +295,7 @@ func AuthorizeOfAmfTaFromConfig(nfId string, tai models.Tai) (models.AuthorizedN
 			}
 			e, err1 := json.Marshal(tai)
 			if err1 != nil {
-				logger.Util.Errorf("Marshal error in AuthorizeOfAmfTaFromConfig: %+v", err1)
+				logger.Util.Errorf("marshal error in AuthorizeOfAmfTaFromConfig: %+v", err1)
 			}
 			err := fmt.Errorf("no supported S-NSSAI list by AMF %s under TAI %s in NSSF configuration", nfId, e)
 			return authorizedNssaiAvailabilityData, err
@@ -407,7 +396,7 @@ func AddAllowedSnssai(allowedSnssai models.AllowedSnssai, accessType models.Acce
 		if authorizedNetworkSliceInfo.AllowedNssaiList[i].AccessType == accessType {
 			hitAllowedNssai = true
 			if len(authorizedNetworkSliceInfo.AllowedNssaiList[i].AllowedSnssaiList) == allowedNssaiNum {
-				logger.Util.Infof("unable to add a new Allowed S-NSSAI since already eight S-NSSAIs in Allowed NSSAI")
+				logger.Util.Infoln("unable to add a new Allowed S-NSSAI since already eight S-NSSAIs in Allowed NSSAI")
 			} else {
 				authorizedNetworkSliceInfo.AllowedNssaiList[i].AllowedSnssaiList = append(authorizedNetworkSliceInfo.AllowedNssaiList[i].AllowedSnssaiList, allowedSnssai)
 			}
@@ -502,6 +491,6 @@ func AddAmfInformation(tai models.Tai, authorizedNetworkSliceInfo *models.Author
 	}
 
 	if !hitAmf {
-		logger.Util.Warnf("no candidate AMF or AMF Set can serve the UE")
+		logger.Util.Warnln("no candidate AMF or AMF Set can serve the UE")
 	}
 }

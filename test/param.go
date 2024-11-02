@@ -13,12 +13,11 @@ import (
 	"flag"
 
 	"github.com/omec-project/nssf/plugin"
-	"github.com/omec-project/util/path_util"
 )
 
 var (
 	ConfigFileFromArgs string
-	DefaultConfigFile  string = path_util.Free5gcPath("github.com/omec-project/nssf/test/conf/test_nssf_config.yaml")
+	DefaultConfigFile  string = "conf/test_nssf_config.yaml"
 )
 
 type TestingUtil struct {

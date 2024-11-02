@@ -27,7 +27,8 @@ type Config struct {
 	Info          *Info              `yaml:"info"`
 	Configuration *Configuration     `yaml:"configuration"`
 	Logger        *utilLogger.Logger `yaml:"logger"`
-	Subscriptions []Subscription     `yaml:"subscriptions,omitempty"`
+	CfgLocation   string
+	Subscriptions []Subscription `yaml:"subscriptions,omitempty"`
 }
 
 type Info struct {
