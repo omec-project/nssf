@@ -1,6 +1,6 @@
 module github.com/omec-project/nssf
 
-go 1.21
+go 1.23
 
 require (
 	github.com/evanphx/json-patch v5.9.0+incompatible
