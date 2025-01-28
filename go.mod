@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/omec-project/config5g v1.5.6
 	github.com/omec-project/openapi v1.3.2
-	github.com/omec-project/util v1.2.11
+	github.com/omec-project/util v1.2.12
 	github.com/prometheus/client_golang v1.20.5
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli v1.22.16
