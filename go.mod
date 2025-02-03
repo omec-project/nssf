@@ -3,7 +3,7 @@ module github.com/omec-project/nssf
 go 1.23
 
 require (
-	github.com/evanphx/json-patch v5.9.0+incompatible
+	github.com/evanphx/json-patch v5.9.11+incompatible
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
 	github.com/omec-project/config5g v1.5.6
