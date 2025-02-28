@@ -6,7 +6,7 @@ require (
 	github.com/evanphx/json-patch v5.9.11+incompatible
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
-	github.com/omec-project/config5g v1.5.7
+	github.com/omec-project/config5g v1.5.8
 	github.com/omec-project/openapi v1.3.3
 	github.com/omec-project/util v1.2.13
 	github.com/prometheus/client_golang v1.21.0
