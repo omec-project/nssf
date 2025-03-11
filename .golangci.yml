@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2024 Intel Corporation
 # Copyright 2019 free5GC.org
+#
 # SPDX-License-Identifier: Apache-2.0
+#
 
 # This file contains all available configuration options
 # with their default values.
@@ -25,7 +27,6 @@ run:
   skip-dirs:
   # default is true. Enables skipping of directories:
   #   vendor$, third_party$, testdata$, examples$, Godeps$, builtin$
-  skip-dirs-use-default: true
   # by default isn't set. If set we pass it to "go list -mod={option}". From "go help modules":
   # If invoked with -mod=readonly, the go command is disallowed from the implicit
   # automatic updating of go.mod described above. Instead, it fails when any changes
@@ -46,8 +47,6 @@ output:
   print-issued-lines: true
   # print linter name in the end of issue text, default is true
   print-linter-name: true
-  # make issues output unique by line, default is true
-  uniq-by-line: true
 # all available settings of specific linters
 linters-settings:
   errcheck:
@@ -119,7 +118,7 @@ linters-settings:
   goimports:
     # put imports beginning with prefix after 3rd-party packages;
     # it's a comma-separated list of prefixes
-    local-prefixes: github.com/org/project
+    local-prefixes: github.com/omec-project
   golint:
     # minimal confidence for issues, default is 0.8
     min-confidence: 0.8
@@ -194,15 +193,33 @@ linters-settings:
   misspell:
     #locale: US
     ignore-words:
+  wsl:
+    # If true append is only allowed to be cuddled if appending value is
+    # matching variables, fields or types on line above. Default is true.
+    strict-append: true
+    # Allow calls and assignments to be cuddled as long as the lines have any
+    # matching variables, fields or types. Default is true.
+    allow-assign-and-call: true
+    # Allow multiline assignments to be cuddled. Default is true.
+    allow-multiline-assign: true
+    # Allow declarations (var) to be cuddled.
+    allow-cuddle-declarations: false
+    # Allow trailing comments in ending of blocks
+    allow-trailing-comment: true
+    # Force newlines in end of case at this limit (0 = never).
+    force-case-trailing-whitespace: 0
+    # Force cuddling of err checks with err var assignment
+    force-err-cuddling: false
+    # Allow leading comments to be separated with empty liens
+    allow-separated-leading-comment: false
   custom:
     # Each custom linter should have a unique name.
 
 linters:
   enable:
     - gofmt
-    - govet
+    # - govet
     - errcheck
-    - staticcheck
     - unused
     - gosimple
     - ineffassign
@@ -210,11 +227,11 @@ linters:
     # Additional
     # - lll
     - godox
-    #- gomnd
+    # - mnd
     - goconst
     # - gocognit
     # - nestif
-    # - gomodguard
+    - gomodguard
     - nakedret
     - gci
     - misspell
@@ -227,7 +244,7 @@ linters:
     - bodyclose
     - asciicheck
     # - stylecheck
-    # - unparam
+    - unparam
     # - wsl
 
   #disable-all: false
@@ -239,15 +256,13 @@ issues:
   # excluded by default patterns execute `golangci-lint run --help`
   exclude:
   # Excluding configuration per-path, per-linter, per-text and per-source
-  exclude-files:
-    - "routers.go"
   exclude-rules:
     # Exclude some linters from running on tests files.
   # Independently from option `exclude` we use default exclude patterns,
   # it can be disabled by this option. To list all
   # excluded by default patterns execute `golangci-lint run --help`.
   # Default value for this option is true.
-  exclude-use-default: false
+  exclude-use-default: true
   # The default value is false. If set to true exclude and exclude-rules
   # regular expressions become case sensitive.
   exclude-case-sensitive: false
@@ -269,6 +284,7 @@ issues:
   new-from-rev: ""
   # Show only new issues created in git patch with set file path.
   #new-from-patch: path/to/patch/file
+  uniq-by-line: true
 severity:
   # Default value is empty string.
   # Set the default severity for issues. If severity rules are defined and the issues
