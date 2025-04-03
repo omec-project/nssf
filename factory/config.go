@@ -146,7 +146,7 @@ func (c *Config) UpdateConfig(commChannel chan *protos.NetworkSliceResponse) boo
 					logger.GrpcLog.Infoln("Slice Sst ", ns.Nssai.Sst)
 					logger.GrpcLog.Infoln("Slice Sd ", ns.Nssai.Sd)
 					sNssaiInPlmns.SupportedSnssaiList = append(sNssaiInPlmns.SupportedSnssaiList, *nssai)
-					var found bool = false
+					found := false
 					for _, cplmn := range NssfConfig.Configuration.SupportedPlmnList {
 						if (cplmn.Mnc == plmn.Mnc) && (cplmn.Mcc == plmn.Mcc) {
 							found = true

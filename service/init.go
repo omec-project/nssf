@@ -229,9 +229,10 @@ func (nssf *NSSF) Start() {
 	}
 
 	serverScheme := factory.NssfConfig.Configuration.Sbi.Scheme
-	if serverScheme == "http" {
+	switch serverScheme {
+	case "http":
 		err = server.ListenAndServe()
-	} else if serverScheme == "https" {
+	case "https":
 		err = server.ListenAndServeTLS(self.PEM, self.Key)
 	}
 

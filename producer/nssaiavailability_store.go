@@ -51,7 +51,7 @@ func NSSAIAvailabilityPatchProcedure(nssaiAvailabilityUpdateInfo plugin.PatchDoc
 	*models.AuthorizedNssaiAvailabilityInfo, *models.ProblemDetails,
 ) {
 	var (
-		response       *models.AuthorizedNssaiAvailabilityInfo = &models.AuthorizedNssaiAvailabilityInfo{}
+		response       = &models.AuthorizedNssaiAvailabilityInfo{}
 		problemDetails *models.ProblemDetails
 	)
 
@@ -160,7 +160,7 @@ func NSSAIAvailabilityPutProcedure(nssaiAvailabilityInfo models.NssaiAvailabilit
 	*models.AuthorizedNssaiAvailabilityInfo, *models.ProblemDetails,
 ) {
 	var (
-		response       *models.AuthorizedNssaiAvailabilityInfo = &models.AuthorizedNssaiAvailabilityInfo{}
+		response       = &models.AuthorizedNssaiAvailabilityInfo{}
 		problemDetails *models.ProblemDetails
 	)
 
