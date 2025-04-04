@@ -52,7 +52,7 @@ func NSSAIAvailabilityPostProcedure(createData models.NssfEventSubscriptionCreat
 	*models.NssfEventSubscriptionCreatedData, *models.ProblemDetails,
 ) {
 	var (
-		response       *models.NssfEventSubscriptionCreatedData = &models.NssfEventSubscriptionCreatedData{}
+		response       = &models.NssfEventSubscriptionCreatedData{}
 		problemDetails *models.ProblemDetails
 	)
 

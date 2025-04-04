@@ -77,7 +77,7 @@ func useDefaultSubscribedSnssai(
 			// Default Access Type is set to 3GPP Access if no TAI is provided
 			// TODO: Depend on operator implementation, it may also return S-NSSAIs in all valid Access Type if
 			//       UE's Access Type could not be identified
-			var accessType models.AccessType = models.AccessType__3_GPP_ACCESS
+			accessType := models.AccessType__3_GPP_ACCESS
 			if param.Tai != nil {
 				accessType = util.GetAccessTypeFromConfig(*param.Tai)
 			}
@@ -237,7 +237,7 @@ func nsselectionForRegistration(param plugin.NsselectionQueryParameter,
 					// Default Access Type is set to 3GPP Access if no TAI is provided
 					// TODO: Depend on operator implementation, it may also return S-NSSAIs in all valid Access Type if
 					//       UE's Access Type could not be identified
-					var accessType models.AccessType = models.AccessType__3_GPP_ACCESS
+					accessType := models.AccessType__3_GPP_ACCESS
 					if param.Tai != nil {
 						accessType = util.GetAccessTypeFromConfig(*param.Tai)
 					}
@@ -270,7 +270,7 @@ func nsselectionForRegistration(param plugin.NsselectionQueryParameter,
 					// Default Access Type is set to 3GPP Access if no TAI is provided
 					// TODO: Depend on operator implementation, it may also return S-NSSAIs in all valid Access Type if
 					//       UE's Access Type could not be identified
-					var accessType models.AccessType = models.AccessType__3_GPP_ACCESS
+					accessType := models.AccessType__3_GPP_ACCESS
 					if param.Tai != nil {
 						accessType = util.GetAccessTypeFromConfig(*param.Tai)
 					}
@@ -369,7 +369,7 @@ func nsselectionForRegistration(param plugin.NsselectionQueryParameter,
 					// Default Access Type is set to 3GPP Access if no TAI is provided
 					// TODO: Depend on operator implementation, it may also return S-NSSAIs in all valid Access Type if
 					//       UE's Access Type could not be identified
-					var accessType models.AccessType = models.AccessType__3_GPP_ACCESS
+					accessType := models.AccessType__3_GPP_ACCESS
 					if param.Tai != nil {
 						accessType = util.GetAccessTypeFromConfig(*param.Tai)
 					}
