@@ -234,6 +234,9 @@ func (nssf *NSSF) Start() {
 		err = server.ListenAndServe()
 	case "https":
 		err = server.ListenAndServeTLS(self.PEM, self.Key)
+	default:
+		logger.InitLog.Fatalf("HTTP server setup failed: server scheme %+v not recognized", serverScheme)
+		return
 	}
 
 	if err != nil {
