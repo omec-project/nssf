@@ -33,7 +33,7 @@ import (
 	"github.com/omec-project/openapi/models"
 	"github.com/omec-project/util/http2_util"
 	utilLogger "github.com/omec-project/util/logger"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -50,7 +50,7 @@ type (
 var config Config
 
 var nssfCLi = []cli.Flag{
-	cli.StringFlag{
+	&cli.StringFlag{
 		Name:     "cfg",
 		Usage:    "nssf config file",
 		Required: true,
@@ -66,7 +66,7 @@ func (*NSSF) GetCliCmd() (flags []cli.Flag) {
 	return nssfCLi
 }
 
-func (nssf *NSSF) Initialize(c *cli.Context) error {
+func (nssf *NSSF) Initialize(c *cli.Command) error {
 	config = Config{
 		cfg: c.String("cfg"),
 	}
@@ -180,9 +180,9 @@ func (nssf *NSSF) setLogLevel() {
 	}
 }
 
-func (nssf *NSSF) FilterCli(c *cli.Context) (args []string) {
+func (nssf *NSSF) FilterCli(c *cli.Command) (args []string) {
 	for _, flag := range nssf.GetCliCmd() {
-		name := flag.GetName()
+		name := flag.Names()[0]
 		value := fmt.Sprint(c.Generic(name))
 		if value == "" {
 			continue
@@ -244,7 +244,7 @@ func (nssf *NSSF) Start() {
 	}
 }
 
-func (nssf *NSSF) Exec(c *cli.Context) error {
+func (nssf *NSSF) Exec(c *cli.Command) error {
 	logger.InitLog.Debugln("args:", c.String("cfg"))
 	args := nssf.FilterCli(c)
 	logger.InitLog.Debugln("filter:", args)
