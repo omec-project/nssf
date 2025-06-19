@@ -15,18 +15,19 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/nssf/service"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
 var NSSF = &service.NSSF{}
 
 func main() {
-	app := cli.NewApp()
+	app := &cli.Command{}
 	app.Name = "nssf"
 	logger.AppLog.Infoln(app.Name)
 	app.Usage = "Network Slice Selection Function"
@@ -34,12 +35,12 @@ func main() {
 	app.Action = action
 	app.Flags = NSSF.GetCliCmd()
 
-	if err := app.Run(os.Args); err != nil {
+	if err := app.Run(context.Background(), os.Args); err != nil {
 		logger.AppLog.Fatalf("NSSF run error: %v", err)
 	}
 }
 
-func action(c *cli.Context) error {
+func action(ctx context.Context, c *cli.Command) error {
 	if err := NSSF.Initialize(c); err != nil {
 		logger.CfgLog.Errorf("%+v", err)
 		return fmt.Errorf("failed to initialize")
