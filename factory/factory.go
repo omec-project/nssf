@@ -12,6 +12,7 @@ package factory
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"sync"
 
@@ -31,19 +32,23 @@ func init() {
 
 // TODO: Support configuration update from REST api
 func InitConfigFactory(f string) error {
-	if content, err := os.ReadFile(f); err != nil {
+	content, err := os.ReadFile(f)
+	if err != nil {
 		return err
-	} else {
-		NssfConfig = Config{}
-
-		if yamlErr := yaml.Unmarshal(content, &NssfConfig); yamlErr != nil {
-			return yamlErr
-		}
-		if NssfConfig.Configuration.WebuiUri == "" {
-			NssfConfig.Configuration.WebuiUri = "webui:9876"
-		}
 	}
-	return nil
+	NssfConfig = Config{}
+
+	if err = yaml.Unmarshal(content, &NssfConfig); err != nil {
+		return err
+	}
+
+	if NssfConfig.Configuration.WebuiUri == "" {
+		NssfConfig.Configuration.WebuiUri = "http://webui:5001"
+		logger.CfgLog.Infof("webuiUri not set in configuration file. Using %v", NssfConfig.Configuration.WebuiUri)
+		return nil
+	}
+	err = validateWebuiUri(NssfConfig.Configuration.WebuiUri)
+	return err
 }
 
 func CheckConfigVersion() error {
@@ -56,5 +61,19 @@ func CheckConfigVersion() error {
 
 	logger.CfgLog.Infof("config version [%s]", currentVersion)
 
+	return nil
+}
+
+func validateWebuiUri(uri string) error {
+	parsedUrl, err := url.ParseRequestURI(uri)
+	if err != nil {
+		return err
+	}
+	if parsedUrl.Scheme != "http" && parsedUrl.Scheme != "https" {
+		return fmt.Errorf("unsupported scheme for webuiUri: %s", parsedUrl.Scheme)
+	}
+	if parsedUrl.Hostname() == "" {
+		return fmt.Errorf("missing host in webuiUri")
+	}
 	return nil
 }
