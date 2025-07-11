@@ -48,17 +48,16 @@ func init() {
 }
 
 type NSSFContext struct {
-	NfId              string
-	Name              string
-	UriScheme         models.UriScheme
-	RegisterIPv4      string
-	BindingIPv4       string
-	Key               string
-	PEM               string
-	NfService         map[models.ServiceName]models.NfService
-	NrfUri            string
-	SupportedPlmnList []models.PlmnId
-	SBIPort           int
+	NfId         string
+	Name         string
+	UriScheme    models.UriScheme
+	RegisterIPv4 string
+	BindingIPv4  string
+	Key          string
+	PEM          string
+	NfService    map[models.ServiceName]models.NfService
+	NrfUri       string
+	SBIPort      int
 }
 
 // Initialize NSSF context with configuration factory
@@ -103,8 +102,6 @@ func InitNssfContext() {
 		logger.InitLog.Warnln("NRF Uri is empty. Using localhost as NRF IPv4 address")
 		nssfContext.NrfUri = fmt.Sprintf("%s://%s:%d", nssfContext.UriScheme, "127.0.0.1", port)
 	}
-
-	nssfContext.SupportedPlmnList = nssfConfig.Configuration.SupportedPlmnList
 }
 
 func initNfService(serviceName []models.ServiceName, version string) (

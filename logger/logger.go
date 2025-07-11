@@ -12,20 +12,21 @@ import (
 )
 
 var (
-	log               *zap.Logger
-	AppLog            *zap.SugaredLogger
-	CfgLog            *zap.SugaredLogger
-	ContextLog        *zap.SugaredLogger
-	FactoryLog        *zap.SugaredLogger
-	HandlerLog        *zap.SugaredLogger
-	InitLog           *zap.SugaredLogger
-	Nsselection       *zap.SugaredLogger
-	Nssaiavailability *zap.SugaredLogger
-	Util              *zap.SugaredLogger
-	ConsumerLog       *zap.SugaredLogger
-	GinLog            *zap.SugaredLogger
-	GrpcLog           *zap.SugaredLogger
-	atomicLevel       zap.AtomicLevel
+	log                *zap.Logger
+	AppLog             *zap.SugaredLogger
+	CfgLog             *zap.SugaredLogger
+	ContextLog         *zap.SugaredLogger
+	FactoryLog         *zap.SugaredLogger
+	HandlerLog         *zap.SugaredLogger
+	InitLog            *zap.SugaredLogger
+	Nsselection        *zap.SugaredLogger
+	Nssaiavailability  *zap.SugaredLogger
+	Util               *zap.SugaredLogger
+	ConsumerLog        *zap.SugaredLogger
+	GinLog             *zap.SugaredLogger
+	PollConfigLog      *zap.SugaredLogger
+	NrfRegistrationLog *zap.SugaredLogger
+	atomicLevel        zap.AtomicLevel
 )
 
 func init() {
@@ -65,7 +66,8 @@ func init() {
 	Util = log.Sugar().With("component", "NSSF", "category", "Util")
 	ConsumerLog = log.Sugar().With("component", "NSSF", "category", "Consumer")
 	GinLog = log.Sugar().With("component", "NSSF", "category", "GIN")
-	GrpcLog = log.Sugar().With("component", "NSSF", "category", "GRPC")
+	PollConfigLog = log.Sugar().With("component", "NSSF", "category", "PollConfig")
+	NrfRegistrationLog = log.Sugar().With("component", "NSSF", "category", "NrfRegistration")
 }
 
 func GetLogger() *zap.Logger {

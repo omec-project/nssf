@@ -17,24 +17,6 @@ configuration:
     - nnssf_nsselection
     - nnssf_nssaiavailability
   nrfUri: https://localhost:29510
-  supportedPlmnList:
-    - mcc: 466
-      mnc: 92
-  supportedNssaiInPlmnList:
-    - plmnId:
-        mcc: 466
-        mnc: 92
-      supportedSnssaiList:
-        - sst: 1
-          sd: 1
-        - sst: 1
-          sd: 2
-        - sst: 1
-          sd: 3
-        - sst: 2
-          sd: 1
-        - sst: 2
-          sd: 2
   nsiList:
     - snssai:
         sst: 1
