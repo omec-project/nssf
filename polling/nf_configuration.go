@@ -139,20 +139,18 @@ func convertPlmnSnssaiList(newConfig []nfConfigApi.PlmnSnssai) ([]models.PlmnId,
 			Mnc: plmnSnssai.PlmnId.Mnc,
 		}
 		newPlmnList = append(newPlmnList, newPlmn)
-
-		newSnssaiList := make([]models.Snssai, 0, len(plmnSnssai.SNssaiList))
+		newSnssaiSet := make(map[models.Snssai]struct{})
 		for _, snssai := range plmnSnssai.SNssaiList {
-			sd := ""
-			if snssai.Sd != nil {
-				sd = *snssai.Sd
-			}
-			newSnssaiList = append(newSnssaiList, models.Snssai{
+			newSnssai := models.Snssai{
 				Sst: snssai.Sst,
-				Sd:  sd,
-			})
+			}
+			if snssai.Sd != nil {
+				newSnssai.Sd = *snssai.Sd
+			}
+			newSnssaiSet[newSnssai] = struct{}{}
 		}
 
-		newSupportedNssais[newPlmn] = newSnssaiList
+		newSupportedNssais[newPlmn] = newSnssaiSet
 	}
 
 	return newPlmnList, newSupportedNssais

@@ -50,7 +50,7 @@ func TestStartPollingService_Success(t *testing.T) {
 
 	expectedPlmn := []models.PlmnId{{Mcc: "001", Mnc: "01"}}
 	expectedSupportedNssai := factory.SupportedNssaiInPlmn{
-		{Mcc: "001", Mnc: "01"}: {{Sst: 1, Sd: ""}},
+		{Mcc: "001", Mnc: "01"}: {{Sst: 1, Sd: ""}: struct{}{}},
 	}
 
 	fetchPlmnConfig = func(poller *nfConfigPoller, pollingEndpoint string) ([]nfConfigApi.PlmnSnssai, error) {
@@ -125,7 +125,7 @@ func TestHandlePolledPlmnSnssaiConfig_ExpectChannelNotToBeUpdated(t *testing.T) 
 	}
 
 	supportedNssai1 := factory.SupportedNssaiInPlmn{
-		{Mcc: "001", Mnc: "01"}: {{Sst: 1, Sd: "010203"}},
+		{Mcc: "001", Mnc: "01"}: {{Sst: 1, Sd: "010203"}: struct{}{}},
 	}
 
 	tests := []struct {
@@ -325,7 +325,7 @@ func TestConvertPlmnSnssaiList(t *testing.T) {
 			},
 			expectedSupportedNssai: factory.SupportedNssaiInPlmn{
 				{Mcc: "001", Mnc: "01"}: {
-					{Sst: 1, Sd: "010203"},
+					{Sst: 1, Sd: "010203"}: struct{}{},
 				},
 			},
 		},
@@ -344,7 +344,7 @@ func TestConvertPlmnSnssaiList(t *testing.T) {
 			},
 			expectedSupportedNssai: factory.SupportedNssaiInPlmn{
 				{Mcc: "001", Mnc: "01"}: {
-					{Sst: 2, Sd: ""},
+					{Sst: 2, Sd: ""}: struct{}{},
 				},
 			},
 		},
@@ -371,11 +371,11 @@ func TestConvertPlmnSnssaiList(t *testing.T) {
 			},
 			expectedSupportedNssai: factory.SupportedNssaiInPlmn{
 				{Mcc: "001", Mnc: "01"}: {
-					{Sst: 1, Sd: "010203"},
-					{Sst: 2, Sd: ""},
+					{Sst: 1, Sd: "010203"}: struct{}{},
+					{Sst: 2, Sd: ""}:       struct{}{},
 				},
 				{Mcc: "002", Mnc: "02"}: {
-					{Sst: 3, Sd: "112233"},
+					{Sst: 3, Sd: "112233"}: struct{}{},
 				},
 			},
 		},

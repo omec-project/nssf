@@ -22,7 +22,7 @@ func TestCheckSupportedSnssaiInPlmn(t *testing.T) {
 	standardSnssai := models.Snssai{Sst: 2}
 
 	supportedNssai := factory.SupportedNssaiInPlmn{
-		plmn1: {snssai1},
+		plmn1: {snssai1: struct{}{}},
 	}
 
 	tests := []struct {
@@ -114,7 +114,7 @@ func TestCheckSupportedSnssaiInPlmn_EmptySupportedNssaiButExistingPlmn(t *testin
 
 	factory.NssfConfig = factory.Config{
 		Configuration: &factory.Configuration{
-			SupportedNssaiInPlmnList: factory.SupportedNssaiInPlmn{plmn: []models.Snssai{}},
+			SupportedNssaiInPlmnList: factory.SupportedNssaiInPlmn{plmn: map[models.Snssai]struct{}{}},
 		},
 	}
 
@@ -132,7 +132,7 @@ func TestCheckSupportedNssaiInPlmn(t *testing.T) {
 	snssai3 := models.Snssai{Sst: 3, Sd: "000003"}
 
 	supportedNssai := factory.SupportedNssaiInPlmn{
-		plmn: {snssai1, snssai2},
+		plmn: {snssai1: struct{}{}, snssai2: struct{}{}},
 	}
 
 	tests := []struct {
@@ -224,7 +224,7 @@ func TestCheckSupportedNssaiInPlmn_EmptySupportedNssaiButExistingPlmn(t *testing
 
 	factory.NssfConfig = factory.Config{
 		Configuration: &factory.Configuration{
-			SupportedNssaiInPlmnList: factory.SupportedNssaiInPlmn{plmn: []models.Snssai{}},
+			SupportedNssaiInPlmnList: factory.SupportedNssaiInPlmn{plmn: map[models.Snssai]struct{}{}},
 		},
 	}
 

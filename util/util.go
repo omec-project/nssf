@@ -84,12 +84,8 @@ func CheckSupportedSnssaiInPlmn(snssai models.Snssai, plmnId models.PlmnId) bool
 		logger.Util.Warnf("no supported S-NSSAI list of PLMNID %+v in NSSF configuration", plmnId)
 		return false
 	}
-	for _, supportedSnssai := range supportedSnssaiList {
-		if snssai == supportedSnssai {
-			return true
-		}
-	}
-	return false
+	_, found = supportedSnssaiList[snssai]
+	return found
 }
 
 // Check whether S-NSSAIs in NSSAI are supported or not in PLMN
@@ -109,15 +105,8 @@ func CheckSupportedNssaiInPlmn(nssai []models.Snssai, plmnId models.PlmnId) bool
 		if CheckStandardSnssai(snssai) {
 			continue
 		}
-
-		hitSupportedNssai := false
-		for _, supportedSnssai := range supportedSnssaiList {
-			if snssai == supportedSnssai {
-				hitSupportedNssai = true
-				break
-			}
-		}
-		if !hitSupportedNssai {
+		_, found = supportedSnssaiList[snssai]
+		if !found {
 			return false
 		}
 	}

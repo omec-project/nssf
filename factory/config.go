@@ -78,7 +78,7 @@ type TaConfig struct {
 	RestrictedSnssaiList []models.RestrictedSnssai `yaml:"restrictedSnssaiList,omitempty"`
 }
 
-type SupportedNssaiInPlmn map[models.PlmnId][]models.Snssai
+type SupportedNssaiInPlmn map[models.PlmnId]map[models.Snssai]struct{}
 
 type NsiConfig struct {
 	Snssai             *models.Snssai          `yaml:"snssai"`
