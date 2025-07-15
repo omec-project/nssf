@@ -25,7 +25,7 @@ const (
 	initialPollingInterval = 5 * time.Second
 	pollingMaxBackoff      = 40 * time.Second
 	pollingBackoffFactor   = 2
-	pollingPath            = "/plmn-snssai"
+	pollingPath            = "/nfconfig/plmn-snssai"
 )
 
 type nfConfigPoller struct {
@@ -112,7 +112,7 @@ func (p *nfConfigPoller) fetchPlmnConfig(pollingEndpoint string) ([]nfConfigApi.
 
 func (p *nfConfigPoller) handlePolledPlmnSnssaiConfig(newPlmnSnssaiConfig []nfConfigApi.PlmnSnssai) {
 	if reflect.DeepEqual(p.currentPlmnSnssaiConfig, newPlmnSnssaiConfig) {
-		logger.PollConfigLog.Debugf("PLMN-SNSSAI config did not change %+v", newPlmnSnssaiConfig)
+		logger.PollConfigLog.Debugf("PLMN-SNSSAI config did not change %+v", p.currentPlmnSnssaiConfig)
 		return
 	}
 	factory.ConfigLock.RLock()
@@ -126,7 +126,7 @@ func (p *nfConfigPoller) handlePolledPlmnSnssaiConfig(newPlmnSnssaiConfig []nfCo
 		p.currentPlmnConfig = newPlmnConfig
 		p.plmnConfigChan <- p.currentPlmnConfig
 	}
-	factory.NssfConfig.Configuration.SupportedNssaiInPlmnList = newSupportedNssai // LOCK
+	factory.NssfConfig.Configuration.SupportedNssaiInPlmnList = newSupportedNssai
 }
 
 func convertPlmnSnssaiList(newConfig []nfConfigApi.PlmnSnssai) ([]models.PlmnId, factory.SupportedNssaiInPlmn) {

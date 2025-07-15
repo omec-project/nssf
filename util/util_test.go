@@ -16,8 +16,10 @@ func TestCheckSupportedSnssaiInPlmn(t *testing.T) {
 	plmn1 := models.PlmnId{Mcc: "001", Mnc: "01"}
 	plmn2 := models.PlmnId{Mcc: "002", Mnc: "02"}
 
-	snssai1 := models.Snssai{Sst: 1, Sd: "000001"}
+	snssai1 := models.Snssai{Sst: 4, Sd: "000001"}
 	snssai2 := models.Snssai{Sst: 2, Sd: "000002"}
+	snssai3 := models.Snssai{Sst: 4}
+	standardSnssai := models.Snssai{Sst: 2}
 
 	supportedNssai := factory.SupportedNssaiInPlmn{
 		plmn1: {snssai1},
@@ -46,6 +48,18 @@ func TestCheckSupportedSnssaiInPlmn(t *testing.T) {
 			snssai:   snssai1,
 			plmnId:   plmn2,
 			expected: false,
+		},
+		{
+			name:     "Equal SST but different SD",
+			snssai:   snssai3,
+			plmnId:   plmn1,
+			expected: false,
+		},
+		{
+			name:     "Standard S-NSSAI is valid",
+			snssai:   standardSnssai,
+			plmnId:   plmn1,
+			expected: true,
 		},
 	}
 
