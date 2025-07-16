@@ -11,10 +11,6 @@
 package factory
 
 import (
-	"strconv"
-
-	protos "github.com/omec-project/config5g/proto/sdcoreConfig"
-	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/openapi/models"
 	utilLogger "github.com/omec-project/util/logger"
 )
@@ -38,18 +34,16 @@ type Info struct {
 
 const (
 	NSSF_DEFAULT_IPV4     = "127.0.0.31"
-	NSSF_DEFAULT_PORT     = "8000"
 	NSSF_DEFAULT_PORT_INT = 8000
 )
 
 type Configuration struct {
-	NssfName                 string                  `yaml:"nssfName,omitempty"`
-	Sbi                      *Sbi                    `yaml:"sbi"`
-	ServiceNameList          []models.ServiceName    `yaml:"serviceNameList"`
-	NrfUri                   string                  `yaml:"nrfUri"`
-	WebuiUri                 string                  `yaml:"webuiUri"`
-	SupportedPlmnList        []models.PlmnId         `yaml:"supportedPlmnList,omitempty"`
-	SupportedNssaiInPlmnList []SupportedNssaiInPlmn  `yaml:"supportedNssaiInPlmnList"`
+	NssfName                 string               `yaml:"nssfName,omitempty"`
+	Sbi                      *Sbi                 `yaml:"sbi"`
+	ServiceNameList          []models.ServiceName `yaml:"serviceNameList"`
+	NrfUri                   string               `yaml:"nrfUri"`
+	WebuiUri                 string               `yaml:"webuiUri"`
+	SupportedNssaiInPlmnList SupportedNssaiInPlmn
 	NsiList                  []NsiConfig             `yaml:"nsiList,omitempty"`
 	AmfSetList               []AmfSetConfig          `yaml:"amfSetList"`
 	AmfList                  []AmfConfig             `yaml:"amfList"`
@@ -84,10 +78,7 @@ type TaConfig struct {
 	RestrictedSnssaiList []models.RestrictedSnssai `yaml:"restrictedSnssaiList,omitempty"`
 }
 
-type SupportedNssaiInPlmn struct {
-	PlmnId              *models.PlmnId  `yaml:"plmnId"`
-	SupportedSnssaiList []models.Snssai `yaml:"supportedSnssaiList"`
-}
+type SupportedNssaiInPlmn map[models.PlmnId]map[models.Snssai]struct{}
 
 type NsiConfig struct {
 	Snssai             *models.Snssai          `yaml:"snssai"`
@@ -110,80 +101,6 @@ type MappingFromPlmnConfig struct {
 type Subscription struct {
 	SubscriptionData *models.NssfEventSubscriptionCreateData `yaml:"subscriptionData"`
 	SubscriptionId   string                                  `yaml:"subscriptionId"`
-}
-
-var ConfigPodTrigger chan bool
-
-func init() {
-	ConfigPodTrigger = make(chan bool)
-}
-
-func (c *Config) UpdateConfig(commChannel chan *protos.NetworkSliceResponse) bool {
-	var minConfig bool
-	for rsp := range commChannel {
-		logger.GrpcLog.Infoln("Received updateConfig in the nssf app : ", rsp)
-		for _, ns := range rsp.NetworkSlice {
-			logger.GrpcLog.Infoln("Network Slice Name ", ns.Name)
-			if ns.Site != nil {
-				logger.GrpcLog.Infoln("Network Slice has site name present ")
-				site := ns.Site
-				logger.GrpcLog.Infoln("Site name ", site.SiteName)
-				if site.Plmn != nil {
-					logger.GrpcLog.Infoln("Plmn mcc ", site.Plmn.Mcc)
-					logger.GrpcLog.Infoln("Plmn mnc ", site.Plmn.Mnc)
-					plmn := new(models.PlmnId)
-					plmn.Mnc = site.Plmn.Mnc
-					plmn.Mcc = site.Plmn.Mcc
-					sNssaiInPlmns := SupportedNssaiInPlmn{}
-					sNssaiInPlmns.PlmnId = plmn
-					nssai := new(models.Snssai)
-					val, err := strconv.ParseInt(ns.Nssai.Sst, 10, 64)
-					if err != nil {
-						logger.GrpcLog.Infoln("Error in parsing sst ", err)
-					}
-					nssai.Sst = int32(val)
-					nssai.Sd = ns.Nssai.Sd
-					logger.GrpcLog.Infoln("Slice Sst ", ns.Nssai.Sst)
-					logger.GrpcLog.Infoln("Slice Sd ", ns.Nssai.Sd)
-					sNssaiInPlmns.SupportedSnssaiList = append(sNssaiInPlmns.SupportedSnssaiList, *nssai)
-					found := false
-					for _, cplmn := range NssfConfig.Configuration.SupportedPlmnList {
-						if (cplmn.Mnc == plmn.Mnc) && (cplmn.Mcc == plmn.Mcc) {
-							found = true
-							break
-						}
-					}
-					if !found {
-						NssfConfig.Configuration.SupportedPlmnList = append(NssfConfig.Configuration.SupportedPlmnList, *plmn)
-						NssfConfig.Configuration.SupportedNssaiInPlmnList = append(NssfConfig.Configuration.SupportedNssaiInPlmnList, sNssaiInPlmns)
-					}
-				} else {
-					logger.GrpcLog.Infoln("Plmn not present in the message ")
-				}
-			}
-		}
-		if !minConfig {
-			// first slice Created
-			if (len(NssfConfig.Configuration.SupportedPlmnList) > 0) &&
-				(len(NssfConfig.Configuration.SupportedNssaiInPlmnList) > 0) {
-				minConfig = true
-				ConfigPodTrigger <- true
-				logger.GrpcLog.Infoln("Send config trigger to main routine")
-			}
-		} else {
-			// all slices deleted
-			if (len(NssfConfig.Configuration.SupportedPlmnList) > 0) &&
-				(len(NssfConfig.Configuration.SupportedNssaiInPlmnList) > 0) {
-				minConfig = false
-				ConfigPodTrigger <- false
-				logger.GrpcLog.Infoln("Send config trigger to main routine")
-			} else {
-				ConfigPodTrigger <- true
-				logger.GrpcLog.Infoln("Send config trigger to main routine")
-			}
-		}
-	}
-	return true
 }
 
 func (c *Config) GetVersion() string {

@@ -8,6 +8,6 @@ info:
 configuration:
   nssfName: NSSF
   nrfUri: https://localhost:29510
-  webuiUri: myspecialwebui:9872 # a valid URI of Webui
+  webuiUri: http://myspecialwebui:9872 # a valid URI of Webui
 
 

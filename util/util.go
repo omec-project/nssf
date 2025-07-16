@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2025 Canonical Ltd
 // Copyright 2019 free5GC.org
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -78,50 +79,38 @@ func CheckSupportedSnssaiInPlmn(snssai models.Snssai, plmnId models.PlmnId) bool
 		return true
 	}
 
-	for _, supportedNssaiInPlmn := range factory.NssfConfig.Configuration.SupportedNssaiInPlmnList {
-		if *supportedNssaiInPlmn.PlmnId == plmnId {
-			for _, supportedSnssai := range supportedNssaiInPlmn.SupportedSnssaiList {
-				if snssai == supportedSnssai {
-					return true
-				}
-			}
-			return false
-		}
+	supportedSnssaiList, found := factory.NssfConfig.Configuration.SupportedNssaiInPlmnList[plmnId]
+	if !found {
+		logger.Util.Warnf("no supported S-NSSAI list of PLMNID %+v in NSSF configuration", plmnId)
+		return false
 	}
-	logger.Util.Warnf("no supported S-NSSAI list of PLMNID %+v in NSSF configuration", plmnId)
-	return false
+	_, found = supportedSnssaiList[snssai]
+	return found
 }
 
 // Check whether S-NSSAIs in NSSAI are supported or not in PLMN
 func CheckSupportedNssaiInPlmn(nssai []models.Snssai, plmnId models.PlmnId) bool {
 	factory.ConfigLock.RLock()
 	defer factory.ConfigLock.RUnlock()
-	for _, supportedNssaiInPlmn := range factory.NssfConfig.Configuration.SupportedNssaiInPlmnList {
-		if *supportedNssaiInPlmn.PlmnId == plmnId {
-			for _, snssai := range nssai {
-				// Standard S-NSSAIs are supposed to be supported
-				// If not, disable following check and be sure to add supported standard S-NSSAI(s) in configuration
-				if CheckStandardSnssai(snssai) {
-					continue
-				}
 
-				hitSupportedNssai := false
-				for _, supportedSnssai := range supportedNssaiInPlmn.SupportedSnssaiList {
-					if snssai == supportedSnssai {
-						hitSupportedNssai = true
-						break
-					}
-				}
+	supportedSnssaiList, found := factory.NssfConfig.Configuration.SupportedNssaiInPlmnList[plmnId]
+	if !found {
+		logger.Util.Warnf("no supported S-NSSAI list of PLMNID %+v in NSSF configuration", plmnId)
+		return false
+	}
 
-				if !hitSupportedNssai {
-					return false
-				}
-			}
-			return true
+	for _, snssai := range nssai {
+		// Standard S-NSSAIs are supposed to be supported
+		// If not, disable following check and be sure to add supported standard S-NSSAI(s) in configuration
+		if CheckStandardSnssai(snssai) {
+			continue
+		}
+		_, found = supportedSnssaiList[snssai]
+		if !found {
+			return false
 		}
 	}
-	logger.Util.Warnf("no supported S-NSSAI list of PLMNID %+v in NSSF configuration", plmnId)
-	return false
+	return true
 }
 
 // Check whether S-NSSAI is supported or not at UE's current TA
