@@ -25,11 +25,11 @@ import (
 	"github.com/omec-project/openapi/models"
 )
 
-func getNfProfile(nssfContext *nssfContext.NSSFContext, plmnConfig []models.PlmnId) (profile models.NfProfile, err error) {
-	if nssfContext == nil {
+func getNfProfile(currentNssfContext *nssfContext.NSSFContext, plmnConfig []models.PlmnId) (profile models.NfProfile, err error) {
+	if currentNssfContext == nil {
 		return models.NfProfile{}, fmt.Errorf("nssf context has not been intialized. NF profile cannot be built")
 	}
-	profile.NfInstanceId = nssfContext.NfId
+	profile.NfInstanceId = currentNssfContext.NfId
 	profile.NfType = models.NfType_NSSF
 	profile.NfStatus = models.NfStatus_REGISTERED
 	if len(plmnConfig) > 0 {
@@ -37,9 +37,9 @@ func getNfProfile(nssfContext *nssfContext.NSSFContext, plmnConfig []models.Plmn
 		copy(plmnCopy, plmnConfig)
 		profile.PlmnList = &plmnCopy
 	}
-	profile.Ipv4Addresses = []string{nssfContext.RegisterIPv4}
+	profile.Ipv4Addresses = []string{currentNssfContext.RegisterIPv4}
 	var services []models.NfService
-	for _, nfService := range nssfContext.NfService {
+	for _, nfService := range currentNssfContext.NfService {
 		services = append(services, nfService)
 	}
 	if len(services) > 0 {

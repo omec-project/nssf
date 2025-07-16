@@ -115,8 +115,8 @@ func (p *nfConfigPoller) handlePolledPlmnSnssaiConfig(newPlmnSnssaiConfig []nfCo
 		logger.PollConfigLog.Debugf("PLMN-SNSSAI config did not change %+v", p.currentPlmnSnssaiConfig)
 		return
 	}
-	factory.ConfigLock.RLock()
-	defer factory.ConfigLock.RUnlock()
+	factory.ConfigLock.Lock()
+	defer factory.ConfigLock.Unlock()
 	p.currentPlmnSnssaiConfig = newPlmnSnssaiConfig
 	logger.PollConfigLog.Infof("PLMN-SNSSAI config changed. New PLMN-SNSSAI config: %+v", p.currentPlmnSnssaiConfig)
 	newPlmnConfig, newSupportedNssai := convertPlmnSnssaiList(p.currentPlmnSnssaiConfig)
