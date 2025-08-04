@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/omec-project/openapi v1.6.2
 	github.com/omec-project/util v1.4.0
-	github.com/prometheus/client_golang v1.22.0
+	github.com/prometheus/client_golang v1.23.0
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v3 v3.3.8
 	go.uber.org/zap v1.27.0
@@ -44,7 +44,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.64.0 // indirect
+	github.com/prometheus/common v0.65.0 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.14 // indirect
