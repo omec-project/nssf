@@ -11,6 +11,13 @@ SPDX-License-Identifier: Apache-2.0
 
 Compliance of the 5G Network functions can be found at [5G Compliance](https://docs.sd-core.opennetworking.org/main/overview/3gpp-compliance-5g.html)
 
+## NSSF flow diagram
+![NSSF Flow Diagram](/docs/images/README-NSSF.png)
+
+## Dynamic Network configuration (via webconsole)
+
+NSSF polls the webconsole every 5 seconds to fetch the latest PLMN configuration.
+
 ### Setting Up Polling
 
 Include the `webuiUri` of the webconsole in the configuration file
