@@ -46,7 +46,7 @@ func NewRouter() *gin.Engine {
 }
 
 func AddService(engine *gin.Engine) *gin.RouterGroup {
-	group := engine.Group("/nnssf-nsselection/v1")
+	group := engine.Group("/nnssf-nsselection/v2")
 
 	for _, route := range routes {
 		switch route.Method {
