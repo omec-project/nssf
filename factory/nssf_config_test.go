@@ -8,28 +8,42 @@ package factory
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
-// Webui URL is not set then default Webui URL value is returned
-func TestGetDefaultWebuiUrl(t *testing.T) {
-	if err := InitConfigFactory("../test/conf/test_nssf_config.yaml"); err != nil {
-		t.Errorf("error in InitConfigFactory: %v", err)
+func TestWebuiUrl(t *testing.T) {
+	tests := []struct {
+		name       string
+		configFile string
+		want       string
+	}{
+		{
+			name:       "default webui URL",
+			configFile: "../test/conf/test_nssf_config.yaml",
+			want:       "http://webui:5001",
+		},
+		{
+			name:       "custom webui URL",
+			configFile: "../test/conf/test_nssf_config_with_custom_webui_url.yaml",
+			want:       "http://myspecialwebui:9872",
+		},
 	}
-	got := NssfConfig.Configuration.WebuiUri
-	want := "http://webui:5001"
-	assert.Equal(t, got, want, "The webui URL is not correct.")
-}
 
-// Webui URL is set to a custom value then custom Webui URL is returned
-func TestGetCustomWebuiUrl(t *testing.T) {
-	if err := InitConfigFactory("../test/conf/test_nssf_config_with_custom_webui_url.yaml"); err != nil {
-		t.Errorf("error in InitConfigFactory: %v", err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Save and restore original config
+			origNssfConfig := NssfConfig
+			defer func() { NssfConfig = origNssfConfig }()
+
+			if err := InitConfigFactory(tt.configFile); err != nil {
+				t.Fatalf("error in InitConfigFactory: %v", err)
+			}
+
+			got := NssfConfig.Configuration.WebuiUri
+			if got != tt.want {
+				t.Errorf("The webui URL is not correct. got = %q, want = %q", got, tt.want)
+			}
+		})
 	}
-	got := NssfConfig.Configuration.WebuiUri
-	want := "http://myspecialwebui:9872"
-	assert.Equal(t, got, want, "The webui URL is not correct.")
 }
 
 func TestValidateWebuiUri(t *testing.T) {
