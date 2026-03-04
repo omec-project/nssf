@@ -190,7 +190,7 @@ func (nssf *NSSF) Exec(c *cli.Command) error {
 	logger.InitLog.Debugln("args:", c.String("cfg"))
 	args := nssf.FilterCli(c)
 	logger.InitLog.Debugln("filter:", args)
-	command := exec.Command("nssf", args...)
+	command := exec.CommandContext(context.Background(), "nssf", args...)
 
 	stdout, err := command.StdoutPipe()
 	if err != nil {
