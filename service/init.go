@@ -4,18 +4,12 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-/*
- * NSSF Service
- */
-
 package service
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"sync"
@@ -111,19 +105,6 @@ func (nssf *NSSF) setLogLevel() {
 	}
 }
 
-func (nssf *NSSF) FilterCli(c *cli.Command) (args []string) {
-	for _, flag := range nssf.GetCliCmd() {
-		name := flag.Names()[0]
-		value := fmt.Sprint(c.Generic(name))
-		if value == "" {
-			continue
-		}
-
-		args = append(args, "--"+name, value)
-	}
-	return args
-}
-
 func (nssf *NSSF) Start() {
 	logger.InitLog.Infoln("server started")
 
@@ -184,51 +165,6 @@ func (nssf *NSSF) Start() {
 	if err != nil {
 		logger.InitLog.Fatalf("HTTP server setup failed: %+v", err)
 	}
-}
-
-func (nssf *NSSF) Exec(c *cli.Command) error {
-	logger.InitLog.Debugln("args:", c.String("cfg"))
-	args := nssf.FilterCli(c)
-	logger.InitLog.Debugln("filter:", args)
-	command := exec.Command("nssf", args...)
-
-	stdout, err := command.StdoutPipe()
-	if err != nil {
-		logger.InitLog.Fatalln(err)
-	}
-	wg := sync.WaitGroup{}
-	goRoutines := 3
-	wg.Add(goRoutines)
-	go func() {
-		in := bufio.NewScanner(stdout)
-		for in.Scan() {
-			logger.InitLog.Infoln(in.Text())
-		}
-		wg.Done()
-	}()
-
-	stderr, err := command.StderrPipe()
-	if err != nil {
-		logger.InitLog.Fatalln(err)
-	}
-	go func() {
-		in := bufio.NewScanner(stderr)
-		for in.Scan() {
-			logger.InitLog.Infoln(in.Text())
-		}
-		wg.Done()
-	}()
-
-	go func() {
-		if err = command.Start(); err != nil {
-			logger.InitLog.Errorf("NSSF start error: %v", err)
-		}
-		wg.Done()
-	}()
-
-	wg.Wait()
-
-	return err
 }
 
 func (nssf *NSSF) Terminate(cancelServices context.CancelFunc, wg *sync.WaitGroup) {
