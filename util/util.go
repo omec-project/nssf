@@ -28,19 +28,6 @@ const (
 	UNSUPPORTED_RESOURCE  = "Unsupported request resources"
 )
 
-// Check if a slice contains an element
-func Contain(target interface{}, slice interface{}) bool {
-	arr := reflect.ValueOf(slice)
-	if arr.Kind() == reflect.Slice {
-		for i := 0; i < arr.Len(); i++ {
-			if reflect.DeepEqual(arr.Index(i).Interface(), target) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 // Check whether UE's Home PLMN is configured/supported
 func CheckSupportedHplmn(homePlmnId models.PlmnId) bool {
 	factory.ConfigLock.RLock()
@@ -336,21 +323,6 @@ func AuthorizeOfTaListFromConfig(taiList []models.Tai) []models.AuthorizedNssaiA
 		}
 	}
 	return authorizedNssaiAvailabilityDataList
-}
-
-// Get supported S-NSSAI list of the given NF ID and TAI from configuration
-func GetSupportedSnssaiListFromConfig(nfId string, tai models.Tai) []models.Snssai {
-	for _, amfConfig := range factory.NssfConfig.Configuration.AmfList {
-		if amfConfig.NfId == nfId {
-			for _, supportedNssaiAvailabilityData := range amfConfig.SupportedNssaiAvailabilityData {
-				if reflect.DeepEqual(*supportedNssaiAvailabilityData.Tai, tai) {
-					return supportedNssaiAvailabilityData.SupportedSnssaiList
-				}
-			}
-			return nil
-		}
-	}
-	return nil
 }
 
 // Find target S-NSSAI mapping with serving S-NSSAIs from mapping of S-NSSAI(s)

@@ -10,8 +10,6 @@
 package test
 
 import (
-	"flag"
-
 	"github.com/omec-project/nssf/plugin"
 )
 
@@ -38,9 +36,4 @@ type TestingNssaiavailability struct {
 	SubscriptionId string
 
 	NfNssaiAvailabilityUri string
-}
-
-func init() {
-	flag.StringVar(&ConfigFileFromArgs, "config-file", DefaultConfigFile, "Configuration file")
-	flag.Parse()
 }
