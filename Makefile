@@ -23,7 +23,7 @@ DOCKER_IMAGE_PREFIX      ?= 5gc-
 DOCKER_IMAGENAME         := $(DOCKER_REGISTRY)$(DOCKER_REPOSITORY)$(DOCKER_IMAGE_PREFIX)$(PROJECT_NAME):$(DOCKER_TAG)
 DOCKER_BUILDKIT          ?= 1
 DEBUG_TOOLS              ?= false
-DOCKER_BUILD_ARGS        ?= --build-arg MAKEFLAGS=-j$(NPROCS) --build-arg DEBUG_TOOLS=$(DEBUG_TOOLS)
+DOCKER_BUILD_ARGS        ?= --build-arg MAKEFLAGS=-j$(NPROCS) --build-arg DEBUG_TOOLS="$(DEBUG_TOOLS)"
 DOCKER_PULL              ?= --pull
 
 ## Docker labels with better error handling
