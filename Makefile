@@ -23,7 +23,7 @@ DOCKER_IMAGE_PREFIX      ?= 5gc-
 DOCKER_IMAGENAME         := $(DOCKER_REGISTRY)$(DOCKER_REPOSITORY)$(DOCKER_IMAGE_PREFIX)$(PROJECT_NAME):$(DOCKER_TAG)
 DOCKER_BUILDKIT          ?= 1
 DEBUG_TOOLS              ?= false
-DOCKER_BUILD_ARGS        ?= --build-arg MAKEFLAGS=-j$(NPROCS) --build-arg DEBUG_TOOLS="$(DEBUG_TOOLS)"
+DOCKER_BUILD_ARGS        ?= --build-arg MAKEFLAGS=-j$(NPROCS) --build-arg DEBUG_TOOLS=$(DEBUG_TOOLS)
 DOCKER_PULL              ?= --pull
 
 ## Docker labels with better error handling
@@ -48,7 +48,6 @@ COVERAGE_DIR             := .coverage
 
 ## Go build configuration
 GO_FILES                 := $(shell find . -name "*.go" ! -name "*_test.go" 2>/dev/null)
-GO_FILES_ALL             := $(shell find . -name "*.go" 2>/dev/null)
 
 ## Tool versions (for reproducible builds)
 GOLANGCI_LINT_VERSION    ?= latest
