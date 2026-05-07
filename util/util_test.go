@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/omec-project/nssf/factory"
+	"github.com/omec-project/openapi"
 	"github.com/omec-project/openapi/models"
 )
 
@@ -16,13 +17,13 @@ func TestCheckSupportedSnssaiInPlmn(t *testing.T) {
 	plmn1 := models.PlmnId{Mcc: "001", Mnc: "01"}
 	plmn2 := models.PlmnId{Mcc: "002", Mnc: "02"}
 
-	snssai1 := models.Snssai{Sst: 4, Sd: "000001"}
-	snssai2 := models.Snssai{Sst: 2, Sd: "000002"}
+	snssai1 := models.Snssai{Sst: 4, Sd: openapi.PtrString("000001")}
+	snssai2 := models.Snssai{Sst: 2, Sd: openapi.PtrString("000002")}
 	snssai3 := models.Snssai{Sst: 4}
 	standardSnssai := models.Snssai{Sst: 2}
 
 	supportedNssai := factory.SupportedNssaiInPlmn{
-		plmn1: {snssai1: struct{}{}},
+		plmn1: {factory.SnssaiToKey(snssai1): struct{}{}},
 	}
 
 	tests := []struct {
@@ -95,7 +96,7 @@ func TestCheckSupportedSnssaiInPlmn_EmptyConfig(t *testing.T) {
 	}
 
 	plmn := models.PlmnId{Mcc: "001", Mnc: "01"}
-	snssai := models.Snssai{Sst: 1, Sd: "000001"}
+	snssai := models.Snssai{Sst: 1, Sd: openapi.PtrString("000001")}
 
 	result := CheckSupportedSnssaiInPlmn(snssai, plmn)
 	if result != false {
@@ -110,11 +111,11 @@ func TestCheckSupportedSnssaiInPlmn_EmptySupportedNssaiButExistingPlmn(t *testin
 	}()
 
 	plmn := models.PlmnId{Mcc: "001", Mnc: "01"}
-	snssai := models.Snssai{Sst: 1, Sd: "000001"}
+	snssai := models.Snssai{Sst: 1, Sd: openapi.PtrString("000001")}
 
 	factory.NssfConfig = factory.Config{
 		Configuration: &factory.Configuration{
-			SupportedNssaiInPlmnList: factory.SupportedNssaiInPlmn{plmn: map[models.Snssai]struct{}{}},
+			SupportedNssaiInPlmnList: factory.SupportedNssaiInPlmn{plmn: map[factory.SnssaiKey]struct{}{}},
 		},
 	}
 
@@ -127,12 +128,12 @@ func TestCheckSupportedSnssaiInPlmn_EmptySupportedNssaiButExistingPlmn(t *testin
 func TestCheckSupportedNssaiInPlmn(t *testing.T) {
 	plmn := models.PlmnId{Mcc: "001", Mnc: "01"}
 
-	snssai1 := models.Snssai{Sst: 1, Sd: "000001"}
-	snssai2 := models.Snssai{Sst: 2, Sd: "000002"}
-	snssai3 := models.Snssai{Sst: 3, Sd: "000003"}
+	snssai1 := models.Snssai{Sst: 1, Sd: openapi.PtrString("000001")}
+	snssai2 := models.Snssai{Sst: 2, Sd: openapi.PtrString("000002")}
+	snssai3 := models.Snssai{Sst: 3, Sd: openapi.PtrString("000003")}
 
 	supportedNssai := factory.SupportedNssaiInPlmn{
-		plmn: {snssai1: struct{}{}, snssai2: struct{}{}},
+		plmn: {factory.SnssaiToKey(snssai1): struct{}{}, factory.SnssaiToKey(snssai2): struct{}{}},
 	}
 
 	tests := []struct {
@@ -205,7 +206,7 @@ func TestCheckSupportedNssaiInPlmn_EmptyConfig(t *testing.T) {
 	}
 
 	plmn := models.PlmnId{Mcc: "001", Mnc: "01"}
-	snssai := []models.Snssai{{Sst: 1, Sd: "000001"}}
+	snssai := []models.Snssai{{Sst: 1, Sd: openapi.PtrString("000001")}}
 
 	result := CheckSupportedNssaiInPlmn(snssai, plmn)
 	if result != false {
@@ -220,11 +221,11 @@ func TestCheckSupportedNssaiInPlmn_EmptySupportedNssaiButExistingPlmn(t *testing
 	}()
 
 	plmn := models.PlmnId{Mcc: "001", Mnc: "01"}
-	snssai := []models.Snssai{{Sst: 1, Sd: "000001"}}
+	snssai := []models.Snssai{{Sst: 1, Sd: openapi.PtrString("000001")}}
 
 	factory.NssfConfig = factory.Config{
 		Configuration: &factory.Configuration{
-			SupportedNssaiInPlmnList: factory.SupportedNssaiInPlmn{plmn: map[models.Snssai]struct{}{}},
+			SupportedNssaiInPlmnList: factory.SupportedNssaiInPlmn{plmn: map[factory.SnssaiKey]struct{}{}},
 		},
 	}
 

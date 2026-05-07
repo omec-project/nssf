@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/omec-project/nssf/logger"
@@ -26,8 +27,38 @@ import (
 	"github.com/omec-project/nssf/plugin"
 	"github.com/omec-project/nssf/util"
 	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/utils"
 	"github.com/omec-project/util/httpwrapper"
 )
+
+func hasExplodedQueryParam(query url.Values, prefix string) bool {
+	for key := range query {
+		if strings.HasPrefix(key, prefix+"[") {
+			return true
+		}
+	}
+	return false
+}
+
+func parseExplodedSnssai(query url.Values, prefix string) (models.Snssai, bool, error) {
+	var snssai models.Snssai
+	var found bool
+
+	if sst := query.Get(prefix + "[sst]"); sst != "" {
+		sstValue, err := strconv.ParseInt(sst, 10, 32)
+		if err != nil {
+			return snssai, false, err
+		}
+		snssai.Sst = int32(sstValue)
+		found = true
+	}
+	if sd := query.Get(prefix + "[sd]"); sd != "" {
+		snssai.Sd = &sd
+		found = true
+	}
+
+	return snssai, found, nil
+}
 
 // Parse NSSelectionGet query parameter
 func parseQueryParameter(query url.Values) (plugin.NsselectionQueryParameter, error) {
@@ -37,14 +68,14 @@ func parseQueryParameter(query url.Values) (plugin.NsselectionQueryParameter, er
 	)
 
 	if query.Get("nf-type") != "" {
-		param.NfType = new(models.NfType)
-		*param.NfType = models.NfType(query.Get("nf-type"))
+		nfType := models.NFType(query.Get("nf-type"))
+		param.NfType = &nfType
 	}
 
 	param.NfId = query.Get("nf-id")
 
 	if query.Get("slice-info-request-for-registration") != "" {
-		param.SliceInfoRequestForRegistration = new(models.SliceInfoForRegistration)
+		param.SliceInfoRequestForRegistration = models.NewSliceInfoForRegistration()
 		err = json.NewDecoder(strings.NewReader(
 			query.Get("slice-info-request-for-registration"))).Decode(param.SliceInfoRequestForRegistration)
 		if err != nil {
@@ -53,16 +84,31 @@ func parseQueryParameter(query url.Values) (plugin.NsselectionQueryParameter, er
 	}
 
 	if query.Get("slice-info-request-for-pdu-session") != "" {
-		param.SliceInfoRequestForPduSession = new(models.SliceInfoForPduSession)
+		param.SliceInfoRequestForPduSession = models.NewSliceInfoForPDUSessionWithDefaults()
 		err = json.NewDecoder(strings.NewReader(
 			query.Get("slice-info-request-for-pdu-session"))).Decode(param.SliceInfoRequestForPduSession)
 		if err != nil {
 			return param, err
 		}
+	} else if hasExplodedQueryParam(query, "slice-info-request-for-pdu-session") {
+		param.SliceInfoRequestForPduSession = models.NewSliceInfoForPDUSessionWithDefaults()
+		if snssai, found, parseErr := parseExplodedSnssai(query, "slice-info-request-for-pdu-session[sNssai]"); parseErr != nil {
+			return param, parseErr
+		} else if found {
+			param.SliceInfoRequestForPduSession.SNssai = snssai
+		}
+		if roamingIndication := query.Get("slice-info-request-for-pdu-session[roamingIndication]"); roamingIndication != "" {
+			param.SliceInfoRequestForPduSession.RoamingIndication = models.RoamingIndication(roamingIndication)
+		}
+		if homeSnssai, found, parseErr := parseExplodedSnssai(query, "slice-info-request-for-pdu-session[homeSnssai]"); parseErr != nil {
+			return param, parseErr
+		} else if found {
+			param.SliceInfoRequestForPduSession.HomeSnssai = &homeSnssai
+		}
 	}
 
 	if query.Get("home-plmn-id") != "" {
-		param.HomePlmnId = new(models.PlmnId)
+		param.HomePlmnId = models.NewPlmnIdWithDefaults()
 		err = json.NewDecoder(strings.NewReader(query.Get("home-plmn-id"))).Decode(param.HomePlmnId)
 		if err != nil {
 			return param, err
@@ -70,7 +116,7 @@ func parseQueryParameter(query url.Values) (plugin.NsselectionQueryParameter, er
 	}
 
 	if query.Get("tai") != "" {
-		param.Tai = new(models.Tai)
+		param.Tai = models.NewTaiWithDefaults()
 		err = json.NewDecoder(strings.NewReader(query.Get("tai"))).Decode(param.Tai)
 		if err != nil {
 			return param, err
@@ -86,8 +132,8 @@ func parseQueryParameter(query url.Values) (plugin.NsselectionQueryParameter, er
 
 // Check if the NF service consumer is authorized
 // TODO: Check if the NF service consumer is legal with local configuration, or possibly after querying NRF through `nf-id` e.g. Whether the V-NSSF is authorized
-func checkNfServiceConsumer(nfType models.NfType) error {
-	if nfType != models.NfType_AMF && nfType != models.NfType_NSSF {
+func checkNfServiceConsumer(nfType models.NFType) error {
+	if nfType != models.NFTYPE_AMF && nfType != models.NFTYPE_NSSF {
 		return fmt.Errorf("`nf-type`:'%s' is not authorized to retrieve the slice selection information", string(nfType))
 	}
 
@@ -110,12 +156,9 @@ func HandleNSSelectionGet(request *httpwrapper.Request) *httpwrapper.Response {
 		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
 		stats.IncrementNssfNsSelectionsStats(nfType, nfId, "FAILURE")
-		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	}
-	problemDetails = &models.ProblemDetails{
-		Status: http.StatusForbidden,
-		Cause:  "UNSPECIFIED",
-	}
+	problemDetails = utils.ProblemDetailsUnspecified()
 	stats.IncrementNssfNsSelectionsStats(nfType, nfId, "FAILURE")
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
@@ -136,12 +179,9 @@ func NSSelectionGetProcedure(query url.Values) (*models.AuthorizedNetworkSliceIn
 	// Parse query parameter
 	param, err := parseQueryParameter(query)
 	if err != nil {
-		// status = http.StatusBadRequest
-		problemDetails = &models.ProblemDetails{
-			Title:  util.MALFORMED_REQUEST,
-			Status: http.StatusBadRequest,
-			Detail: "[Query Parameter] " + err.Error(),
-		}
+		problemDetail := "[Query Parameter] " + err.Error()
+		logger.Nsselection.Errorln(problemDetail)
+		problemDetails = utils.ProblemDetailsMalformedRequestSyntax(problemDetail)
 		return nil, problemDetails
 	}
 
@@ -149,11 +189,10 @@ func NSSelectionGetProcedure(query url.Values) (*models.AuthorizedNetworkSliceIn
 	err = checkNfServiceConsumer(*param.NfType)
 	if err != nil {
 		// status = http.StatusForbidden
-		problemDetails = &models.ProblemDetails{
-			Title:  util.UNAUTHORIZED_CONSUMER,
-			Status: http.StatusForbidden,
-			Detail: err.Error(),
-		}
+		problemDetails = models.NewProblemDetails()
+		problemDetails.SetTitle(util.UNAUTHORIZED_CONSUMER)
+		problemDetails.SetStatus(http.StatusForbidden)
+		problemDetails.SetDetail(err.Error())
 		return nil, problemDetails
 	}
 

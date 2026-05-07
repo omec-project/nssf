@@ -20,6 +20,7 @@ import (
 
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/utils"
 	"github.com/omec-project/util/httpwrapper"
 )
 
@@ -34,11 +35,8 @@ func HandleNSSAIAvailabilityUnsubscribe(request *httpwrapper.Request) *httpwrapp
 	if problemDetails == nil {
 		return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 	} else if reflect.DeepEqual(*problemDetails, models.ProblemDetails{}) {
-		problemDetails = &models.ProblemDetails{
-			Status: http.StatusForbidden,
-			Cause:  "UNSPECIFIED",
-		}
+		problemDetails = utils.ProblemDetailsUnspecified()
 		return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 	}
-	return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+	return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 }

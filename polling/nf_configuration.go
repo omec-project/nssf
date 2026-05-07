@@ -135,19 +135,17 @@ func convertPlmnSnssaiList(newConfig []nfConfigApi.PlmnSnssai) ([]models.PlmnId,
 
 	for _, plmnSnssai := range newConfig {
 		newPlmn := models.PlmnId{
-			Mcc: plmnSnssai.PlmnId.Mcc,
-			Mnc: plmnSnssai.PlmnId.Mnc,
+			Mcc: plmnSnssai.PlmnId.GetMcc(),
+			Mnc: plmnSnssai.PlmnId.GetMnc(),
 		}
 		newPlmnList = append(newPlmnList, newPlmn)
-		newSnssaiSet := make(map[models.Snssai]struct{})
+		newSnssaiSet := make(map[factory.SnssaiKey]struct{})
 		for _, snssai := range plmnSnssai.SNssaiList {
-			newSnssai := models.Snssai{
-				Sst: snssai.Sst,
+			newSnssai := models.NewSnssai(snssai.GetSst())
+			if snssai.GetSd() != "" {
+				newSnssai.SetSd(snssai.GetSd())
 			}
-			if snssai.Sd != nil {
-				newSnssai.Sd = *snssai.Sd
-			}
-			newSnssaiSet[newSnssai] = struct{}{}
+			newSnssaiSet[factory.SnssaiToKey(*newSnssai)] = struct{}{}
 		}
 
 		newSupportedNssais[newPlmn] = newSnssaiSet

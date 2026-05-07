@@ -20,6 +20,7 @@ import (
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/nssf/plugin"
 	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/utils"
 	"github.com/omec-project/util/httpwrapper"
 )
 
@@ -33,7 +34,7 @@ func HandleNSSAIAvailabilityDelete(request *httpwrapper.Request) *httpwrapper.Re
 	problemDetails := NSSAIAvailabilityDeleteProcedure(nfID)
 
 	if problemDetails != nil {
-		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	}
 	return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
 }
@@ -56,12 +57,9 @@ func HandleNSSAIAvailabilityPatch(request *httpwrapper.Request) *httpwrapper.Res
 	if response != nil {
 		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
-		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	}
-	problemDetails = &models.ProblemDetails{
-		Status: http.StatusForbidden,
-		Cause:  "UNSPECIFIED",
-	}
+	problemDetails = utils.ProblemDetailsUnspecified()
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
@@ -78,11 +76,8 @@ func HandleNSSAIAvailabilityPut(request *httpwrapper.Request) *httpwrapper.Respo
 	if response != nil {
 		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
-		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	}
-	problemDetails = &models.ProblemDetails{
-		Status: http.StatusForbidden,
-		Cause:  "UNSPECIFIED",
-	}
+	problemDetails = utils.ProblemDetailsUnspecified()
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }

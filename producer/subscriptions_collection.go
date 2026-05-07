@@ -19,6 +19,7 @@ import (
 
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/utils"
 	"github.com/omec-project/util/httpwrapper"
 )
 
@@ -36,11 +37,8 @@ func HandleNSSAIAvailabilityPost(request *httpwrapper.Request) *httpwrapper.Resp
 		// TODO: Based on TS 29.531 5.3.2.3.1, add location header
 		return httpwrapper.NewResponse(http.StatusCreated, nil, response)
 	} else if problemDetails != nil {
-		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	}
-	problemDetails = &models.ProblemDetails{
-		Status: http.StatusForbidden,
-		Cause:  "UNSPECIFIED",
-	}
+	problemDetails = utils.ProblemDetailsUnspecified()
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
