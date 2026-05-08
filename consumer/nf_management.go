@@ -20,9 +20,9 @@ import (
 
 	nssfContext "github.com/omec-project/nssf/context"
 	"github.com/omec-project/nssf/logger"
-	"github.com/omec-project/openapi"
-	"github.com/omec-project/openapi/Nnrf_NFManagement"
-	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/v2"
+	"github.com/omec-project/openapi/v2/Nnrf_NFManagement"
+	"github.com/omec-project/openapi/v2/models"
 )
 
 func getNfProfile(currentNssfContext *nssfContext.NSSFContext, plmnConfig []models.PlmnId) (profile *models.NFProfile, err error) {

@@ -11,7 +11,7 @@
 package factory
 
 import (
-	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/v2/models"
 	utilLogger "github.com/omec-project/util/logger"
 )
 

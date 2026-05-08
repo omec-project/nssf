@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/omec-project/nssf/context"
-	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/v2/models"
 )
 
 func TestBuildNFProfile_EmptyContext(t *testing.T) {

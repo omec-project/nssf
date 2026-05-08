@@ -10,7 +10,7 @@
 package plugin
 
 import (
-	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/v2/models"
 )
 
 type NsselectionQueryParameter struct {

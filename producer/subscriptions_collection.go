@@ -18,8 +18,8 @@ import (
 	"net/http"
 
 	"github.com/omec-project/nssf/logger"
-	"github.com/omec-project/openapi/models"
-	"github.com/omec-project/openapi/utils"
+	"github.com/omec-project/openapi/v2/models"
+	"github.com/omec-project/openapi/v2/utils"
 	"github.com/omec-project/util/httpwrapper"
 )
 
