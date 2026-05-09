@@ -55,7 +55,7 @@ func StartNfRegistrationService(ctx context.Context, plmnConfigChan <-chan []mod
 			if len(newPlmnConfig) == 0 {
 				logger.NrfRegistrationLog.Debugln("PLMN config is empty. NSSF will deregister")
 				DeregisterNF()
-				return
+				continue
 			}
 			logger.NrfRegistrationLog.Debugln("PLMN config is not empty. NSSF will update registration")
 			registerCtx, registerCancel = context.WithCancel(context.Background())
@@ -104,7 +104,7 @@ func heartbeatNF(plmnConfig []models.PlmnId) {
 	patchItem := []models.PatchItem{
 		{
 			Op:    models.PATCHOPERATION_REPLACE,
-			Path:  "/nfstatus",
+			Path:  "/nfStatus",
 			Value: models.NFSTATUS_REGISTERED,
 		},
 	}

@@ -113,6 +113,78 @@ func TestNfRegistrationService_WhenConfigChanged_ThenRegisterNFSuccessAndStartTi
 	}
 }
 
+func TestNfRegistrationService_WhenEmptyConfig_ThenContinuesListeningForUpdates(t *testing.T) {
+	originalDeregisterNF := consumer.SendDeregisterNFInstance
+	originalRegisterNF := registerNF
+	defer func() {
+		consumer.SendDeregisterNFInstance = originalDeregisterNF
+		registerNF = originalRegisterNF
+		if keepAliveTimer != nil {
+			keepAliveTimer.Stop()
+			keepAliveTimer = nil
+		}
+	}()
+
+	keepAliveTimer = nil
+	deregisterCalls := 0
+	consumer.SendDeregisterNFInstance = func() error {
+		deregisterCalls++
+		return nil
+	}
+
+	registered := make(chan []models.PlmnId, 1)
+	registerNF = func(ctx context.Context, newPlmnConfig []models.PlmnId) {
+		registered <- newPlmnConfig
+	}
+
+	ch := make(chan []models.PlmnId, 2)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go StartNfRegistrationService(ctx, ch)
+	ch <- []models.PlmnId{}
+	ch <- []models.PlmnId{{Mcc: "001", Mnc: "01"}}
+
+	select {
+	case config := <-registered:
+		if !reflect.DeepEqual(config, []models.PlmnId{{Mcc: "001", Mnc: "01"}}) {
+			t.Fatalf("unexpected registration config: %+v", config)
+		}
+	case <-time.After(200 * time.Millisecond):
+		t.Fatal("expected registration service to continue after empty config")
+	}
+
+	if deregisterCalls != 1 {
+		t.Fatalf("expected one deregistration call, got %d", deregisterCalls)
+	}
+}
+
+func TestHeartbeatNF_UsesCanonicalNfStatusPatchPath(t *testing.T) {
+	keepAliveTimer = time.NewTimer(60 * time.Second)
+	defer func() {
+		if keepAliveTimer != nil {
+			keepAliveTimer.Stop()
+		}
+	}()
+
+	originalSendUpdateNFInstance := consumer.SendUpdateNFInstance
+	defer func() {
+		consumer.SendUpdateNFInstance = originalSendUpdateNFInstance
+	}()
+
+	consumer.SendUpdateNFInstance = func(patchItem []models.PatchItem) (*models.NFProfile, *models.ProblemDetails, error) {
+		if len(patchItem) != 1 {
+			t.Fatalf("expected one patch item, got %d", len(patchItem))
+		}
+		if patchItem[0].Path != "/nfStatus" {
+			t.Fatalf("unexpected patch path: %s", patchItem[0].Path)
+		}
+		return &models.NFProfile{}, nil, nil
+	}
+
+	heartbeatNF(nil)
+}
+
 func TestNfRegistrationService_ConfigChanged_RetryIfRegisterNFFails(t *testing.T) {
 	originalSendRegisterNFInstance := consumer.SendRegisterNFInstance
 	defer func() {

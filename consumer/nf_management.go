@@ -27,7 +27,7 @@ import (
 
 func getNfProfile(currentNssfContext *nssfContext.NSSFContext, plmnConfig []models.PlmnId) (profile *models.NFProfile, err error) {
 	if currentNssfContext == nil {
-		return &models.NFProfile{}, fmt.Errorf("nssf context has not been intialized. NF profile cannot be built")
+		return &models.NFProfile{}, fmt.Errorf("nssf context has not been initialized. NF profile cannot be built")
 	}
 	profile = models.NewNFProfileWithDefaults()
 	profile.SetNfInstanceId(currentNssfContext.NfId)

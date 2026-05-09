@@ -10,6 +10,30 @@ import (
 	"testing"
 )
 
+func TestCheckConfigVersion(t *testing.T) {
+	tests := []struct {
+		name    string
+		version string
+		wantErr bool
+	}{
+		{name: "matching version", version: NSSF_EXPECTED_CONFIG_VERSION, wantErr: false},
+		{name: "mismatched version", version: "2.0.0", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			orig := NssfConfig
+			defer func() { NssfConfig = orig }()
+
+			NssfConfig = Config{Info: &Info{Version: tt.version}}
+			err := CheckConfigVersion()
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("CheckConfigVersion() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestWebuiUrl(t *testing.T) {
 	tests := []struct {
 		name       string

@@ -256,7 +256,6 @@ func GetRestrictedSnssaiListFromConfig(tai models.Tai) []models.RestrictedSnssai
 // Get authorized NSSAI availability data of the given NF ID and TAI from configuration
 func AuthorizeOfAmfTaFromConfig(nfId string, tai models.Tai) (models.AuthorizedNssaiAvailabilityData, error) {
 	var authorizedNssaiAvailabilityData models.AuthorizedNssaiAvailabilityData
-	authorizedNssaiAvailabilityData.Tai = models.Tai{}
 	authorizedNssaiAvailabilityData.Tai = tai
 
 	for _, amfConfig := range factory.NssfConfig.Configuration.AmfList {
@@ -292,7 +291,6 @@ func AuthorizeOfAmfFromConfig(nfId string) ([]models.AuthorizedNssaiAvailability
 		if amfConfig.NfId == nfId {
 			for _, supportedNssaiAvailabilityData := range amfConfig.SupportedNssaiAvailabilityData {
 				var authorizedNssaiAvailabilityData models.AuthorizedNssaiAvailabilityData
-				authorizedNssaiAvailabilityData.Tai = models.Tai{}
 				authorizedNssaiAvailabilityData.Tai = supportedNssaiAvailabilityData.Tai
 				authorizedNssaiAvailabilityData.SupportedSnssaiList = supportedNssaiAvailabilityData.SupportedSnssaiList
 				authorizedNssaiAvailabilityData.RestrictedSnssaiList = GetRestrictedSnssaiListFromConfig(authorizedNssaiAvailabilityData.Tai)
