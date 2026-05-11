@@ -69,7 +69,8 @@ func useDefaultSubscribedSnssai(
 					nsiInformationList...)
 			}
 			if param.HomePlmnId != nil && !util.CheckStandardSnssai(subscribedSnssai.SubscribedSnssai) {
-				allowedSnssaiElement.MappedHomeSnssai = &subscribedSnssai.SubscribedSnssai
+				mappedHomeSnssai := subscribedSnssai.SubscribedSnssai
+				allowedSnssaiElement.MappedHomeSnssai = &mappedHomeSnssai
 			}
 
 			// Default Access Type is set to 3GPP Access if no TAI is provided
@@ -146,7 +147,8 @@ func setConfiguredNssai(
 			var configuredSnssai models.ConfiguredSnssai
 			configuredSnssai.ConfiguredSnssai = mappingOfSubscribedSnssai
 			if param.HomePlmnId != nil && !util.CheckStandardSnssai(subscribedSnssai.SubscribedSnssai) {
-				configuredSnssai.MappedHomeSnssai = &subscribedSnssai.SubscribedSnssai
+				mappedHomeSnssai := subscribedSnssai.SubscribedSnssai
+				configuredSnssai.MappedHomeSnssai = &mappedHomeSnssai
 			}
 
 			authorizedNetworkSliceInfo.ConfiguredNssai = append(authorizedNetworkSliceInfo.ConfiguredNssai, configuredSnssai)
@@ -223,7 +225,8 @@ func nsselectionForRegistration(param plugin.NsselectionQueryParameter,
 					// Add mappings to Allowed NSSAI list
 					var allowedSnssaiElement models.AllowedSnssai
 					allowedSnssaiElement.AllowedSnssai = targetMapping.ServingSnssai
-					allowedSnssaiElement.MappedHomeSnssai = &subscribedSnssai.SubscribedSnssai
+					mappedHomeSnssai := subscribedSnssai.SubscribedSnssai
+					allowedSnssaiElement.MappedHomeSnssai = &mappedHomeSnssai
 
 					// Default Access Type is set to 3GPP Access if no TAI is provided
 					// TODO: Depend on operator implementation, it may also return S-NSSAIs in all valid Access Type if
@@ -254,7 +257,8 @@ func nsselectionForRegistration(param plugin.NsselectionQueryParameter,
 					// Add mappings to Allowed NSSAI list
 					var allowedSnssaiElement models.AllowedSnssai
 					allowedSnssaiElement.AllowedSnssai = targetMapping.ServingSnssai
-					allowedSnssaiElement.MappedHomeSnssai = &snssai
+					snssaiCopy := snssai
+					allowedSnssaiElement.MappedHomeSnssai = &snssaiCopy
 
 					// Default Access Type is set to 3GPP Access if no TAI is provided
 					// TODO: Depend on operator implementation, it may also return S-NSSAIs in all valid Access Type if

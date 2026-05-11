@@ -186,6 +186,20 @@ func NSSelectionGetProcedure(query url.Values) (*models.AuthorizedNetworkSliceIn
 	}
 
 	// Check permission of NF service consumer
+	if param.NfType == nil {
+		problemDetail := "[Query Parameter] `nf-type` is required"
+		problemDetails = models.NewProblemDetails()
+		problemDetails.SetTitle(util.INVALID_REQUEST)
+		problemDetails.SetStatus(http.StatusBadRequest)
+		problemDetails.SetDetail(problemDetail)
+		invalidParams := []models.InvalidParam{{
+			Param:  "nf-type",
+			Reason: &problemDetail,
+		}}
+		problemDetails.SetInvalidParams(invalidParams)
+		return nil, problemDetails
+	}
+
 	err = checkNfServiceConsumer(*param.NfType)
 	if err != nil {
 		// status = http.StatusForbidden
