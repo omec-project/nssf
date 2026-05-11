@@ -329,7 +329,7 @@ func FindMappingWithServingSnssai(
 	snssai models.Snssai, mappings []models.MappingOfSnssai,
 ) (models.MappingOfSnssai, bool) {
 	for _, mapping := range mappings {
-		if mapping.ServingSnssai == snssai {
+		if factory.SnssaiToKey(mapping.ServingSnssai) == factory.SnssaiToKey(snssai) {
 			return mapping, true
 		}
 	}

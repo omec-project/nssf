@@ -14,6 +14,7 @@ package producer
 import (
 	"net/http"
 
+	"github.com/omec-project/nssf/factory"
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/nssf/plugin"
 	"github.com/omec-project/nssf/util"
@@ -100,7 +101,7 @@ func useDefaultConfiguredNssai(
 
 		// Check whether the Default Configured S-NSSAI is subscribed
 		for _, subscribedSnssai := range param.SliceInfoRequestForRegistration.SubscribedNssai {
-			if requestedSnssai == subscribedSnssai.SubscribedSnssai {
+			if factory.SnssaiToKey(requestedSnssai) == factory.SnssaiToKey(subscribedSnssai.SubscribedSnssai) {
 				var configuredSnssai models.ConfiguredSnssai
 				configuredSnssai.ConfiguredSnssai = requestedSnssai
 
@@ -337,7 +338,7 @@ func nsselectionForRegistration(param plugin.NsselectionQueryParameter,
 
 			hitSubscription := false
 			for _, subscribedSnssai := range param.SliceInfoRequestForRegistration.SubscribedNssai {
-				if mappingOfRequestedSnssai == subscribedSnssai.SubscribedSnssai {
+				if factory.SnssaiToKey(mappingOfRequestedSnssai) == factory.SnssaiToKey(subscribedSnssai.SubscribedSnssai) {
 					// Requested S-NSSAI matches one of Subscribed S-NSSAI
 					// Add it to Allowed NSSAI list
 					hitSubscription = true
@@ -351,7 +352,8 @@ func nsselectionForRegistration(param plugin.NsselectionQueryParameter,
 							nsiInformationList...)
 					}
 					if param.HomePlmnId != nil && !util.CheckStandardSnssai(requestedSnssai) {
-						allowedSnssaiElement.MappedHomeSnssai = &subscribedSnssai.SubscribedSnssai
+						mappedHomeSnssai := subscribedSnssai.SubscribedSnssai
+						allowedSnssaiElement.MappedHomeSnssai = &mappedHomeSnssai
 					}
 
 					// Default Access Type is set to 3GPP Access if no TAI is provided
