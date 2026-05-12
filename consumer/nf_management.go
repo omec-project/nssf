@@ -72,6 +72,13 @@ var SendRegisterNFInstance = func(plmnConfig []models.PlmnId) (prof *models.NFPr
 	if res == nil {
 		return &models.NFProfile{}, "", fmt.Errorf("no response from server")
 	}
+	if res.Body != nil {
+		defer func() {
+			if bodyCloseErr := res.Body.Close(); bodyCloseErr != nil {
+				logger.AppLog.Errorf("RegisterNFInstance response body cannot close: %+v", bodyCloseErr)
+			}
+		}()
+	}
 
 	switch res.StatusCode {
 	case http.StatusOK: // NFUpdate
