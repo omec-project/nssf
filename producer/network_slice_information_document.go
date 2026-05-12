@@ -210,6 +210,20 @@ func NSSelectionGetProcedure(query url.Values) (*models.AuthorizedNetworkSliceIn
 		return nil, problemDetails
 	}
 
+	if param.SliceInfoRequestForRegistration == nil && param.SliceInfoRequestForPduSession == nil {
+		problemDetail := "[Query Parameter] one of `slice-info-request-for-registration` or `slice-info-request-for-pdu-session` is required"
+		problemDetails = models.NewProblemDetails()
+		problemDetails.SetTitle(util.INVALID_REQUEST)
+		problemDetails.SetStatus(http.StatusBadRequest)
+		problemDetails.SetDetail(problemDetail)
+		invalidParams := []models.InvalidParam{
+			{Param: "slice-info-request-for-registration", Reason: &problemDetail},
+			{Param: "slice-info-request-for-pdu-session", Reason: &problemDetail},
+		}
+		problemDetails.SetInvalidParams(invalidParams)
+		return nil, problemDetails
+	}
+
 	if param.SliceInfoRequestForRegistration != nil {
 		// Network slice information is requested during the Registration procedure
 		status = nsselectionForRegistration(param, response, problemDetails)

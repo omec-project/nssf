@@ -41,13 +41,7 @@ func HTTPNSSAIAvailabilitySubModifyPatch(c *gin.Context) {
 // Delete /nssai-availability/subscriptions/:subscriptionId
 // Deletes an already existing NSSAI availability notification subscription
 func HTTPNSSAIAvailabilityUnsubscribe(c *gin.Context) {
-	logger.Nssaiavailability.Infoln("Handle Delete /nssai-availability/subscriptions/:subscriptionId is not implemented")
-	nfID := c.Param("nfId")
-	if nfID != "subscriptions" {
-		c.JSON(http.StatusNotFound, gin.H{})
-		logger.Nssaiavailability.Infof("404 Not Found")
-		return
-	}
+	logger.Nssaiavailability.Infoln("Handle Delete /nssai-availability/subscriptions/:subscriptionId")
 
 	req := httpwrapper.NewRequest(c.Request, nil)
 	req.Params["subscriptionId"] = c.Params.ByName("subscriptionId")
