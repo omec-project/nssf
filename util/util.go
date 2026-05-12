@@ -312,7 +312,6 @@ func AuthorizeOfTaListFromConfig(taiList []models.Tai) []models.AuthorizedNssaiA
 		for _, tai := range taiList {
 			if reflect.DeepEqual(*taConfig.Tai, tai) {
 				var authorizedNssaiAvailabilityData models.AuthorizedNssaiAvailabilityData
-				authorizedNssaiAvailabilityData.Tai = models.Tai{}
 				authorizedNssaiAvailabilityData.Tai = tai
 				authorizedNssaiAvailabilityData.SupportedSnssaiList = taConfig.SupportedSnssaiList
 				authorizedNssaiAvailabilityData.RestrictedSnssaiList = GetRestrictedSnssaiListFromConfig(tai)
@@ -339,7 +338,7 @@ func FindMappingWithServingSnssai(
 // Find target S-NSSAI mapping with home S-NSSAIs from mapping of S-NSSAI(s)
 func FindMappingWithHomeSnssai(snssai models.Snssai, mappings []models.MappingOfSnssai) (models.MappingOfSnssai, bool) {
 	for _, mapping := range mappings {
-		if mapping.HomeSnssai == snssai {
+		if factory.SnssaiToKey(mapping.HomeSnssai) == factory.SnssaiToKey(snssai) {
 			return mapping, true
 		}
 	}
