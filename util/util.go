@@ -184,8 +184,9 @@ func CheckStandardSnssai(snssai models.Snssai) bool {
 
 // Check whether the NSSAI contains the specific S-NSSAI
 func CheckSnssaiInNssai(targetSnssai models.Snssai, nssai []models.Snssai) bool {
+	targetSnssaiKey := factory.SnssaiToKey(targetSnssai)
 	for _, snssai := range nssai {
-		if snssai == targetSnssai {
+		if factory.SnssaiToKey(snssai) == targetSnssaiKey {
 			return true
 		}
 	}

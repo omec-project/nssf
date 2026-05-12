@@ -45,7 +45,14 @@ func StartNfRegistrationService(ctx context.Context, plmnConfigChan <-chan []mod
 			}
 			logger.NrfRegistrationLog.Infoln("NF registration service shutting down")
 			return
-		case newPlmnConfig := <-plmnConfigChan:
+		case newPlmnConfig, ok := <-plmnConfigChan:
+			if !ok {
+				if registerCancel != nil {
+					registerCancel()
+				}
+				logger.NrfRegistrationLog.Infoln("PLMN config channel closed. NSSF registration service exiting")
+				return
+			}
 			// Cancel current sync if running
 			if registerCancel != nil {
 				logger.NrfRegistrationLog.Infoln("NF registration context cancelled")

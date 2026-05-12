@@ -148,11 +148,10 @@ func NSSAIAvailabilityPutProcedure(nssaiAvailabilityInfo models.NssaiAvailabilit
 	*models.AuthorizedNssaiAvailabilityInfo, *models.ProblemDetails,
 ) {
 	response := models.NewAuthorizedNssaiAvailabilityInfoWithDefaults()
-	problemDetails := models.NewProblemDetails()
 
 	for _, s := range nssaiAvailabilityInfo.SupportedNssaiAvailabilityData {
 		if !util.CheckSupportedNssaiInPlmn(s.SupportedSnssaiList, s.Tai.PlmnId) {
-			problemDetails = models.NewProblemDetails()
+			problemDetails := models.NewProblemDetails()
 			problemDetails.SetTitle(util.UNSUPPORTED_RESOURCE)
 			problemDetails.SetStatus(http.StatusForbidden)
 			problemDetails.SetDetail("S-NSSAI in Requested NSSAI is not supported in PLMN")
@@ -201,5 +200,5 @@ func NSSAIAvailabilityPutProcedure(nssaiAvailabilityInfo models.NssaiAvailabilit
 		}
 	}
 
-	return response, problemDetails
+	return response, nil
 }
