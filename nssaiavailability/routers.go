@@ -179,11 +179,5 @@ func getRoutes() []Route {
 			"/nssai-availability/subscriptions",
 			HTTPNSSAIAvailabilityPost,
 		},
-		{
-			"NssaiAvailabilityNotificationRequestBodyNfNssaiAvailabilityUriPost",
-			http.MethodPost,
-			"/:request.body#/nfNssaiAvailabilityUri",
-			HTTPNssaiAvailabilityNotificationRequestBodyNfNssaiAvailabilityUriPost,
-		},
 	}
 }
