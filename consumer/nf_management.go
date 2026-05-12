@@ -105,6 +105,13 @@ var SendUpdateNFInstance = func(patchItem []models.PatchItem) (*models.NFProfile
 	apiUpdateNFInstanceRequest := client.NFInstanceIDDocumentAPI.UpdateNFInstance(context.Background(), nssfSelf.NfId)
 	apiUpdateNFInstanceRequest = apiUpdateNFInstanceRequest.PatchItem(patchItem)
 	receivedNfProfile, res, err := client.NFInstanceIDDocumentAPI.UpdateNFInstanceExecute(apiUpdateNFInstanceRequest)
+	if res != nil && res.Body != nil {
+		defer func() {
+			if bodyCloseErr := res.Body.Close(); bodyCloseErr != nil {
+				logger.AppLog.Errorf("UpdateNFInstance response body cannot close: %+v", bodyCloseErr)
+			}
+		}()
+	}
 	if err != nil {
 		if openapiErr, ok := err.(openapi.GenericOpenAPIError); ok {
 			if model := openapiErr.Model(); model != nil {
@@ -120,6 +127,9 @@ var SendUpdateNFInstance = func(patchItem []models.PatchItem) (*models.NFProfile
 		return &models.NFProfile{}, nil, fmt.Errorf("no response from server")
 	}
 	if res.StatusCode == http.StatusOK || res.StatusCode == http.StatusNoContent {
+		if receivedNfProfile == nil {
+			return &models.NFProfile{}, nil, nil
+		}
 		return receivedNfProfile, nil, nil
 	}
 	return &models.NFProfile{}, nil, fmt.Errorf("unexpected response code")
