@@ -33,8 +33,9 @@ import (
 // Patch /nssai-availability/subscriptions/:subscriptionId
 // updates an already existing NSSAI availability notification subscription
 func HTTPNSSAIAvailabilitySubModifyPatch(c *gin.Context) {
-	logger.Nssaiavailability.Infoln("Handle Patch /nssai-availability/subscriptions/:subscriptionId is not implemented")
-	c.String(http.StatusNotImplemented, "501 not implemented")
+	detail := "Handle Patch /nssai-availability/subscriptions/:subscriptionId is not implemented"
+	logger.Nssaiavailability.Infoln(detail)
+	writeNotImplementedProblem(c, detail)
 }
 
 // Delete /nssai-availability/subscriptions/:subscriptionId
