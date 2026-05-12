@@ -105,10 +105,11 @@ func CheckSupportedNssaiInPlmn(nssai []models.Snssai, plmnId models.PlmnId) bool
 func CheckSupportedSnssaiInTa(snssai models.Snssai, tai models.Tai) bool {
 	factory.ConfigLock.RLock()
 	defer factory.ConfigLock.RUnlock()
+	targetSnssaiKey := factory.SnssaiToKey(snssai)
 	for _, taConfig := range factory.NssfConfig.Configuration.TaList {
 		if reflect.DeepEqual(*taConfig.Tai, tai) {
 			for _, supportedSnssai := range taConfig.SupportedSnssaiList {
-				if supportedSnssai == snssai {
+				if factory.SnssaiToKey(supportedSnssai) == targetSnssaiKey {
 					return true
 				}
 			}

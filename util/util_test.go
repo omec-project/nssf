@@ -125,6 +125,35 @@ func TestCheckSupportedSnssaiInPlmn_EmptySupportedNssaiButExistingPlmn(t *testin
 	}
 }
 
+func TestCheckSupportedSnssaiInTa_UsesValueEqualityForSd(t *testing.T) {
+	originalFactoryConfig := factory.NssfConfig
+	defer func() {
+		factory.NssfConfig = originalFactoryConfig
+	}()
+
+	tai := models.Tai{
+		PlmnId: models.PlmnId{Mcc: "001", Mnc: "01"},
+		Tac:    "000001",
+	}
+	configuredSnssai := models.Snssai{Sst: 1, Sd: openapi.PtrString("010203")}
+	requestSnssai := models.Snssai{Sst: 1, Sd: openapi.PtrString("010203")}
+
+	factory.NssfConfig = factory.Config{
+		Configuration: &factory.Configuration{
+			TaList: []factory.TaConfig{
+				{
+					Tai:                 &tai,
+					SupportedSnssaiList: []models.Snssai{configuredSnssai},
+				},
+			},
+		},
+	}
+
+	if !CheckSupportedSnssaiInTa(requestSnssai, tai) {
+		t.Fatal("expected S-NSSAI with equal SST/SD values to be supported in TA")
+	}
+}
+
 func TestCheckSupportedNssaiInPlmn(t *testing.T) {
 	plmn := models.PlmnId{Mcc: "001", Mnc: "01"}
 
