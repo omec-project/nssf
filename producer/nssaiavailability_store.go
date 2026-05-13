@@ -30,6 +30,8 @@ import (
 // NSSAIAvailability DELETE method
 func NSSAIAvailabilityDeleteProcedure(nfId string) *models.ProblemDetails {
 	var problemDetails *models.ProblemDetails
+	factory.ConfigLock.Lock()
+	defer factory.ConfigLock.Unlock()
 	for i, amfConfig := range factory.NssfConfig.Configuration.AmfList {
 		if amfConfig.NfId == nfId {
 			factory.NssfConfig.Configuration.AmfList = append(
