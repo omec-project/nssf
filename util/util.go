@@ -239,6 +239,10 @@ func GetAccessTypeFromConfig(tai models.Tai) models.AccessType {
 func GetRestrictedSnssaiListFromConfig(tai models.Tai) []models.RestrictedSnssai {
 	factory.ConfigLock.RLock()
 	defer factory.ConfigLock.RUnlock()
+	return getRestrictedSnssaiListFromConfigLocked(tai)
+}
+
+func getRestrictedSnssaiListFromConfigLocked(tai models.Tai) []models.RestrictedSnssai {
 	for _, taConfig := range factory.NssfConfig.Configuration.TaList {
 		if reflect.DeepEqual(*taConfig.Tai, tai) {
 			if len(taConfig.RestrictedSnssaiList) != 0 {
@@ -261,12 +265,14 @@ func AuthorizeOfAmfTaFromConfig(nfId string, tai models.Tai) (models.AuthorizedN
 	var authorizedNssaiAvailabilityData models.AuthorizedNssaiAvailabilityData
 	authorizedNssaiAvailabilityData.Tai = tai
 
+	factory.ConfigLock.RLock()
+	defer factory.ConfigLock.RUnlock()
 	for _, amfConfig := range factory.NssfConfig.Configuration.AmfList {
 		if amfConfig.NfId == nfId {
 			for _, supportedNssaiAvailabilityData := range amfConfig.SupportedNssaiAvailabilityData {
 				if reflect.DeepEqual(supportedNssaiAvailabilityData.Tai, tai) {
 					authorizedNssaiAvailabilityData.SupportedSnssaiList = supportedNssaiAvailabilityData.SupportedSnssaiList
-					authorizedNssaiAvailabilityData.RestrictedSnssaiList = GetRestrictedSnssaiListFromConfig(tai)
+					authorizedNssaiAvailabilityData.RestrictedSnssaiList = getRestrictedSnssaiListFromConfigLocked(tai)
 
 					// TODO: Sort the returned slice
 					return authorizedNssaiAvailabilityData, nil
@@ -296,7 +302,7 @@ func AuthorizeOfAmfFromConfig(nfId string) ([]models.AuthorizedNssaiAvailability
 				var authorizedNssaiAvailabilityData models.AuthorizedNssaiAvailabilityData
 				authorizedNssaiAvailabilityData.Tai = supportedNssaiAvailabilityData.Tai
 				authorizedNssaiAvailabilityData.SupportedSnssaiList = supportedNssaiAvailabilityData.SupportedSnssaiList
-				authorizedNssaiAvailabilityData.RestrictedSnssaiList = GetRestrictedSnssaiListFromConfig(authorizedNssaiAvailabilityData.Tai)
+				authorizedNssaiAvailabilityData.RestrictedSnssaiList = getRestrictedSnssaiListFromConfigLocked(authorizedNssaiAvailabilityData.Tai)
 
 				authorizedNssaiAvailabilityDataList = append(authorizedNssaiAvailabilityDataList, authorizedNssaiAvailabilityData)
 			}
@@ -311,13 +317,15 @@ func AuthorizeOfAmfFromConfig(nfId string) ([]models.AuthorizedNssaiAvailability
 func AuthorizeOfTaListFromConfig(taiList []models.Tai) []models.AuthorizedNssaiAvailabilityData {
 	var authorizedNssaiAvailabilityDataList []models.AuthorizedNssaiAvailabilityData
 
+	factory.ConfigLock.RLock()
+	defer factory.ConfigLock.RUnlock()
 	for _, taConfig := range factory.NssfConfig.Configuration.TaList {
 		for _, tai := range taiList {
 			if reflect.DeepEqual(*taConfig.Tai, tai) {
 				var authorizedNssaiAvailabilityData models.AuthorizedNssaiAvailabilityData
 				authorizedNssaiAvailabilityData.Tai = tai
 				authorizedNssaiAvailabilityData.SupportedSnssaiList = taConfig.SupportedSnssaiList
-				authorizedNssaiAvailabilityData.RestrictedSnssaiList = GetRestrictedSnssaiListFromConfig(tai)
+				authorizedNssaiAvailabilityData.RestrictedSnssaiList = getRestrictedSnssaiListFromConfigLocked(tai)
 
 				authorizedNssaiAvailabilityDataList = append(authorizedNssaiAvailabilityDataList, authorizedNssaiAvailabilityData)
 			}
