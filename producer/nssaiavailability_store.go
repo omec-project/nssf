@@ -84,6 +84,8 @@ func NSSAIAvailabilityPatchProcedure(nssaiAvailabilityUpdateInfo plugin.PatchDoc
 			original, err = json.Marshal(temp)
 			if err != nil {
 				logger.Nssaiavailability.Errorf("marshal error in NSSAIAvailabilityPatchProcedure: %+v", err)
+				factory.ConfigLock.RUnlock()
+				return nil, utils.ProblemDetailsSystemFailure(err.Error())
 			}
 			original = bytes.ReplaceAll(original, []byte(dummyString), []byte(""))
 
