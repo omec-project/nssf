@@ -26,10 +26,8 @@ import (
 
 // Get available subscription ID from configuration
 // In this implementation, string converted from 32-bit integer is used as subscription ID
-func getUnusedSubscriptionID() (string, error) {
+func getUnusedSubscriptionIDLocked() (string, error) {
 	var idx uint32 = 1
-	factory.ConfigLock.RLock()
-	defer factory.ConfigLock.RUnlock()
 	for _, subscription := range factory.NssfConfig.Subscriptions {
 		tempID, err := strconv.Atoi(subscription.SubscriptionId)
 		if err != nil {
@@ -54,7 +52,10 @@ func NSSAIAvailabilityPostProcedure(createData models.NssfEventSubscriptionCreat
 	response := models.NewNssfEventSubscriptionCreatedDataWithDefaults()
 
 	var subscription factory.Subscription
-	tempID, err := getUnusedSubscriptionID()
+	factory.ConfigLock.Lock()
+	defer factory.ConfigLock.Unlock()
+
+	tempID, err := getUnusedSubscriptionIDLocked()
 	if err != nil {
 		logger.Nssaiavailability.Warnln(err.Error())
 		problemDetails := models.NewProblemDetails()
