@@ -209,8 +209,9 @@ func GetMappingOfPlmnFromConfig(homePlmnId models.PlmnId) []models.MappingOfSnss
 func GetNsiInformationListFromConfig(snssai models.Snssai) []models.NsiInformation {
 	factory.ConfigLock.RLock()
 	defer factory.ConfigLock.RUnlock()
+	targetKey := factory.SnssaiToKey(snssai)
 	for _, nsiConfig := range factory.NssfConfig.Configuration.NsiList {
-		if *nsiConfig.Snssai == snssai {
+		if factory.SnssaiToKey(*nsiConfig.Snssai) == targetKey {
 			return nsiConfig.NsiInformationList
 		}
 	}

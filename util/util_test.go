@@ -263,3 +263,31 @@ func TestCheckSupportedNssaiInPlmn_EmptySupportedNssaiButExistingPlmn(t *testing
 		t.Errorf("Expected CheckSupportedNssaiInPlmn to be false, got `%v`", result)
 	}
 }
+
+func TestGetNsiInformationListFromConfig_UsesValueEqualityForSd(t *testing.T) {
+	originalFactoryConfig := factory.NssfConfig
+	defer func() {
+		factory.NssfConfig = originalFactoryConfig
+	}()
+
+	configuredSnssai := models.Snssai{Sst: 1, Sd: openapi.PtrString("010203")}
+	requestSnssai := models.Snssai{Sst: 1, Sd: openapi.PtrString("010203")}
+	expected := []models.NsiInformation{{NrfId: "nrf-1"}}
+
+	factory.NssfConfig = factory.Config{
+		Configuration: &factory.Configuration{
+			NsiList: []factory.NsiConfig{{
+				Snssai:             &configuredSnssai,
+				NsiInformationList: expected,
+			}},
+		},
+	}
+
+	result := GetNsiInformationListFromConfig(requestSnssai)
+	if len(result) != len(expected) {
+		t.Fatalf("expected %d NSI info entries, got %d", len(expected), len(result))
+	}
+	if result[0].GetNrfId() != expected[0].GetNrfId() {
+		t.Fatalf("expected NRF ID %q, got %q", expected[0].GetNrfId(), result[0].GetNrfId())
+	}
+}

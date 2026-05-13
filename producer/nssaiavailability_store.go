@@ -61,7 +61,18 @@ func NSSAIAvailabilityPatchProcedure(nssaiAvailabilityUpdateInfo plugin.PatchDoc
 		if amfConfig.NfId == nfId {
 			// Since json-patch package does not have idea of optional field of datatype,
 			// provide with null or empty value instead of omitting the field
-			temp := factory.NssfConfig.Configuration.AmfList[amfIdx].SupportedNssaiAvailabilityData
+			var temp []models.SupportedNssaiAvailabilityData
+			configData, err := json.Marshal(factory.NssfConfig.Configuration.AmfList[amfIdx].SupportedNssaiAvailabilityData)
+			if err != nil {
+				factory.ConfigLock.RUnlock()
+				logger.Nssaiavailability.Errorf("marshal error in NSSAIAvailabilityPatchProcedure: %+v", err)
+				return nil, utils.ProblemDetailsSystemFailure(err.Error())
+			}
+			if err = json.Unmarshal(configData, &temp); err != nil {
+				factory.ConfigLock.RUnlock()
+				logger.Nssaiavailability.Errorf("unmarshal error in NSSAIAvailabilityPatchProcedure: %+v", err)
+				return nil, utils.ProblemDetailsSystemFailure(err.Error())
+			}
 			const dummyString string = "DUMMY"
 			for i := range temp {
 				for j := range temp[i].SupportedSnssaiList {
@@ -70,10 +81,9 @@ func NSSAIAvailabilityPatchProcedure(nssaiAvailabilityUpdateInfo plugin.PatchDoc
 					}
 				}
 			}
-			var err error
 			original, err = json.Marshal(temp)
 			if err != nil {
-				logger.Nssaiavailability.Errorf("Marshal error in NSSAIAvailabilityPatchProcedure: %+v", err)
+				logger.Nssaiavailability.Errorf("marshal error in NSSAIAvailabilityPatchProcedure: %+v", err)
 			}
 			original = bytes.ReplaceAll(original, []byte(dummyString), []byte(""))
 
