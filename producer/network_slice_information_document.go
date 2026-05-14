@@ -1,7 +1,6 @@
+// Copyright (c) 2026 Intel Corporation
 // Copyright 2019 free5GC.org
-//
 // SPDX-License-Identifier: Apache-2.0
-//
 
 /*
  * NSSF NS Selection
@@ -49,15 +48,167 @@ func parseExplodedSnssai(query url.Values, prefix string) (models.Snssai, bool, 
 		if err != nil {
 			return snssai, false, err
 		}
-		snssai.Sst = int32(sstValue)
+		snssai.SetSst(int32(sstValue))
 		found = true
 	}
 	if sd := query.Get(prefix + "[sd]"); sd != "" {
-		snssai.Sd = &sd
+		snssai.SetSd(sd)
 		found = true
 	}
 
 	return snssai, found, nil
+}
+
+func parseExplodedBool(query url.Values, key string) (*bool, error) {
+	value := query.Get(key)
+	if value == "" {
+		return nil, nil
+	}
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return nil, err
+	}
+	return &parsed, nil
+}
+
+func parseExplodedSnssaiList(query url.Values, prefix string) ([]models.Snssai, error) {
+	sstValues := query[prefix+"[sst]"]
+	sdValues := query[prefix+"[sd]"]
+	count := max(len(sstValues), len(sdValues))
+	if count == 0 {
+		return nil, nil
+	}
+
+	items := make([]models.Snssai, 0, count)
+	for i := range count {
+		var item models.Snssai
+		var found bool
+
+		if i < len(sstValues) && sstValues[i] != "" {
+			sstValue, err := strconv.ParseInt(sstValues[i], 10, 32)
+			if err != nil {
+				return nil, err
+			}
+			item.SetSst(int32(sstValue))
+			found = true
+		}
+		if i < len(sdValues) && sdValues[i] != "" {
+			item.SetSd(sdValues[i])
+			found = true
+		}
+		if found {
+			items = append(items, item)
+		}
+	}
+
+	return items, nil
+}
+
+func parseExplodedSubscribedSnssaiList(query url.Values, prefix string) ([]models.SubscribedSnssai, error) {
+	subscribedSnssai, err := parseExplodedSnssaiList(query, prefix+"[subscribedSnssai]")
+	if err != nil {
+		return nil, err
+	}
+	defaultValues := query[prefix+"[defaultIndication]"]
+	nssrgValues := query[prefix+"[subscribedNsSrgList]"]
+	count := max(len(subscribedSnssai), max(len(defaultValues), len(nssrgValues)))
+	if count == 0 {
+		return nil, nil
+	}
+
+	items := make([]models.SubscribedSnssai, 0, count)
+	for i := range count {
+		var item models.SubscribedSnssai
+		var found bool
+
+		if i < len(subscribedSnssai) {
+			item.SubscribedSnssai = subscribedSnssai[i]
+			found = true
+		}
+		if i < len(defaultValues) && defaultValues[i] != "" {
+			defaultValue, err := strconv.ParseBool(defaultValues[i])
+			if err != nil {
+				return nil, err
+			}
+			item.DefaultIndication = &defaultValue
+			found = true
+		}
+		if len(subscribedSnssai) == 1 && len(nssrgValues) > 1 {
+			item.SubscribedNsSrgList = append([]string(nil), nssrgValues...)
+			found = true
+		} else if i < len(nssrgValues) && nssrgValues[i] != "" {
+			item.SubscribedNsSrgList = []string{nssrgValues[i]}
+			found = true
+		}
+		if found {
+			items = append(items, item)
+		}
+	}
+
+	return items, nil
+}
+
+func parseExplodedMappingOfSnssaiList(query url.Values, prefix string) ([]models.MappingOfSnssai, error) {
+	servingSnssai, err := parseExplodedSnssaiList(query, prefix+"[servingSnssai]")
+	if err != nil {
+		return nil, err
+	}
+	homeSnssai, err := parseExplodedSnssaiList(query, prefix+"[homeSnssai]")
+	if err != nil {
+		return nil, err
+	}
+	count := max(len(servingSnssai), len(homeSnssai))
+	if count == 0 {
+		return nil, nil
+	}
+
+	items := make([]models.MappingOfSnssai, 0, count)
+	for i := range count {
+		var item models.MappingOfSnssai
+		var found bool
+
+		if i < len(servingSnssai) {
+			item.ServingSnssai = servingSnssai[i]
+			found = true
+		}
+		if i < len(homeSnssai) {
+			item.HomeSnssai = homeSnssai[i]
+			found = true
+		}
+		if found {
+			items = append(items, item)
+		}
+	}
+
+	return items, nil
+}
+
+func parseExplodedPlmnId(query url.Values, prefix string) *models.PlmnId {
+	mcc := query.Get(prefix + "[mcc]")
+	mnc := query.Get(prefix + "[mnc]")
+	if mcc == "" && mnc == "" {
+		return nil
+	}
+	plmnId := models.NewPlmnId(mcc, mnc)
+	return plmnId
+}
+
+func parseExplodedTai(query url.Values, prefix string) *models.Tai {
+	plmnId := parseExplodedPlmnId(query, prefix+"[plmnId]")
+	tac := query.Get(prefix + "[tac]")
+	nid := query.Get(prefix + "[nid]")
+	if plmnId == nil && tac == "" && nid == "" {
+		return nil
+	}
+	tai := models.NewTaiWithDefaults()
+	if plmnId != nil {
+		tai.SetPlmnId(*plmnId)
+	}
+	tai.SetTac(tac)
+	if nid != "" {
+		tai.SetNid(nid)
+	}
+	return tai
 }
 
 // Parse NSSelectionGet query parameter
@@ -80,6 +231,53 @@ func parseQueryParameter(query url.Values) (plugin.NsselectionQueryParameter, er
 			query.Get("slice-info-request-for-registration"))).Decode(param.SliceInfoRequestForRegistration)
 		if err != nil {
 			return param, err
+		}
+	} else if hasExplodedQueryParam(query, "slice-info-request-for-registration") {
+		param.SliceInfoRequestForRegistration = models.NewSliceInfoForRegistration()
+		if subscribedNssai, parseErr := parseExplodedSubscribedSnssaiList(query, "slice-info-request-for-registration[subscribedNssai]"); parseErr != nil {
+			return param, parseErr
+		} else if len(subscribedNssai) != 0 {
+			param.SliceInfoRequestForRegistration.SubscribedNssai = subscribedNssai
+		}
+		if sNssaiForMapping, parseErr := parseExplodedSnssaiList(query, "slice-info-request-for-registration[sNssaiForMapping]"); parseErr != nil {
+			return param, parseErr
+		} else if len(sNssaiForMapping) != 0 {
+			param.SliceInfoRequestForRegistration.SNssaiForMapping = sNssaiForMapping
+		}
+		if requestedNssai, parseErr := parseExplodedSnssaiList(query, "slice-info-request-for-registration[requestedNssai]"); parseErr != nil {
+			return param, parseErr
+		} else if len(requestedNssai) != 0 {
+			param.SliceInfoRequestForRegistration.RequestedNssai = requestedNssai
+		}
+		if mappingOfNssai, parseErr := parseExplodedMappingOfSnssaiList(query, "slice-info-request-for-registration[mappingOfNssai]"); parseErr != nil {
+			return param, parseErr
+		} else if len(mappingOfNssai) != 0 {
+			param.SliceInfoRequestForRegistration.MappingOfNssai = mappingOfNssai
+		}
+		if defaultConfiguredSnssaiInd, parseErr := parseExplodedBool(query, "slice-info-request-for-registration[defaultConfiguredSnssaiInd]"); parseErr != nil {
+			return param, parseErr
+		} else if defaultConfiguredSnssaiInd != nil {
+			param.SliceInfoRequestForRegistration.DefaultConfiguredSnssaiInd = defaultConfiguredSnssaiInd
+		}
+		if requestMapping, parseErr := parseExplodedBool(query, "slice-info-request-for-registration[requestMapping]"); parseErr != nil {
+			return param, parseErr
+		} else if requestMapping != nil {
+			param.SliceInfoRequestForRegistration.RequestMapping = requestMapping
+		}
+		if ueSupNssrgInd, parseErr := parseExplodedBool(query, "slice-info-request-for-registration[ueSupNssrgInd]"); parseErr != nil {
+			return param, parseErr
+		} else if ueSupNssrgInd != nil {
+			param.SliceInfoRequestForRegistration.UeSupNssrgInd = ueSupNssrgInd
+		}
+		if suppressNssrgInd, parseErr := parseExplodedBool(query, "slice-info-request-for-registration[suppressNssrgInd]"); parseErr != nil {
+			return param, parseErr
+		} else if suppressNssrgInd != nil {
+			param.SliceInfoRequestForRegistration.SuppressNssrgInd = suppressNssrgInd
+		}
+		if nsagSupported, parseErr := parseExplodedBool(query, "slice-info-request-for-registration[nsagSupported]"); parseErr != nil {
+			return param, parseErr
+		} else if nsagSupported != nil {
+			param.SliceInfoRequestForRegistration.NsagSupported = nsagSupported
 		}
 	}
 
@@ -113,6 +311,8 @@ func parseQueryParameter(query url.Values) (plugin.NsselectionQueryParameter, er
 		if err != nil {
 			return param, err
 		}
+	} else if hasExplodedQueryParam(query, "home-plmn-id") {
+		param.HomePlmnId = parseExplodedPlmnId(query, "home-plmn-id")
 	}
 
 	if query.Get("tai") != "" {
@@ -121,6 +321,8 @@ func parseQueryParameter(query url.Values) (plugin.NsselectionQueryParameter, er
 		if err != nil {
 			return param, err
 		}
+	} else if hasExplodedQueryParam(query, "tai") {
+		param.Tai = parseExplodedTai(query, "tai")
 	}
 
 	if query.Get("supported-features") != "" {
