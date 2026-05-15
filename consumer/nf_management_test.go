@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/omec-project/nssf/context"
-	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/v2/models"
 )
 
 func TestBuildNFProfile_EmptyContext(t *testing.T) {
@@ -19,9 +19,9 @@ func TestBuildNFProfile_EmptyContext(t *testing.T) {
 	}
 
 	if profile.NfInstanceId != "test-id" ||
-		profile.NfType != models.NfType_NSSF ||
-		profile.NfStatus != models.NfStatus_REGISTERED ||
-		profile.PlmnList != nil ||
+		profile.NfType != models.NFTYPE_NSSF ||
+		profile.NfStatus != models.NFSTATUS_REGISTERED ||
+		len(profile.PlmnList) != 0 ||
 		profile.Ipv4Addresses[0] != ctx.RegisterIPv4 ||
 		profile.NfServices != nil {
 		t.Errorf("Unexpected NfProfile built: %v\n", profile)
@@ -32,7 +32,7 @@ func TestBuildNFProfile_InitializedContext(t *testing.T) {
 	ctx := context.NSSFContext{
 		NfId:         "test-id",
 		RegisterIPv4: "127.0.0.42",
-		NfService: map[models.ServiceName]models.NfService{models.ServiceName_NNSSF_NSSELECTION: {
+		NfService: map[models.ServiceName]models.NFService{models.SERVICENAME_NNSSF_NSSELECTION: {
 			ServiceInstanceId: "instance-id",
 			ServiceName:       "service-name",
 		}},
@@ -44,12 +44,12 @@ func TestBuildNFProfile_InitializedContext(t *testing.T) {
 	}
 
 	if profile.NfInstanceId != "test-id" ||
-		profile.NfType != models.NfType_NSSF ||
-		profile.NfStatus != models.NfStatus_REGISTERED ||
-		(*profile.PlmnList)[0].Mcc != "200" ||
-		(*profile.PlmnList)[0].Mnc != "99" ||
+		profile.NfType != models.NFTYPE_NSSF ||
+		profile.NfStatus != models.NFSTATUS_REGISTERED ||
+		(profile.PlmnList)[0].Mcc != "200" ||
+		(profile.PlmnList)[0].Mnc != "99" ||
 		profile.Ipv4Addresses[0] != ctx.RegisterIPv4 ||
-		(*profile.NfServices)[0].ServiceName != "service-name" {
+		(profile.NfServices)[0].ServiceName != "service-name" {
 		t.Errorf("Unexpected NfProfile built: %v\n", profile)
 	}
 }

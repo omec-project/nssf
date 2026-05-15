@@ -21,12 +21,20 @@ import (
 	"github.com/google/uuid"
 	"github.com/omec-project/nssf/factory"
 	"github.com/omec-project/nssf/logger"
-	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/v2"
+	"github.com/omec-project/openapi/v2/models"
 )
 
 var nssfContext = NSSFContext{}
 
 const port int = 29510
+
+const (
+	nsSelectionAPIFullVersion        = "2.3.0-alpha.3"
+	nsSelectionAPIVersionInURI       = "v2"
+	nssaiAvailabilityAPIFullVersion  = "1.3.0-alpha.6"
+	nssaiAvailabilityAPIVersionInURI = "v1"
+)
 
 // Initialize NSSF context with default value
 func init() {
@@ -34,17 +42,17 @@ func init() {
 
 	nssfContext.Name = "NSSF"
 
-	nssfContext.UriScheme = models.UriScheme_HTTPS
+	nssfContext.UriScheme = models.URISCHEME_HTTPS
 	nssfContext.RegisterIPv4 = factory.NSSF_DEFAULT_IPV4
 	nssfContext.SBIPort = factory.NSSF_DEFAULT_PORT_INT
 
 	serviceName := []models.ServiceName{
-		models.ServiceName_NNSSF_NSSELECTION,
-		models.ServiceName_NNSSF_NSSAIAVAILABILITY,
+		models.SERVICENAME_NNSSF_NSSELECTION,
+		models.SERVICENAME_NNSSF_NSSAIAVAILABILITY,
 	}
-	nssfContext.NfService = initNfService(serviceName, "1.0.0")
+	nssfContext.NfService = initNfService(serviceName)
 
-	nssfContext.NrfUri = fmt.Sprintf("%s://%s:%d", models.UriScheme_HTTPS, nssfContext.RegisterIPv4, port)
+	nssfContext.NrfUri = fmt.Sprintf("%s://%s:%d", models.URISCHEME_HTTPS, nssfContext.RegisterIPv4, port)
 }
 
 type NSSFContext struct {
@@ -55,7 +63,7 @@ type NSSFContext struct {
 	BindingIPv4  string
 	Key          string
 	PEM          string
-	NfService    map[models.ServiceName]models.NfService
+	NfService    map[models.ServiceName]models.NFService
 	NrfUri       string
 	SBIPort      int
 }
@@ -94,7 +102,8 @@ func InitNssfContext() {
 		}
 	}
 
-	nssfContext.NfService = initNfService(nssfConfig.Configuration.ServiceNameList, nssfConfig.Info.Version)
+	// NF service API versions must track the served SBI routes, not the config schema version.
+	nssfContext.NfService = initNfService(nssfConfig.Configuration.ServiceNameList)
 
 	if nssfConfig.Configuration.NrfUri != "" {
 		nssfContext.NrfUri = nssfConfig.Configuration.NrfUri
@@ -104,35 +113,44 @@ func InitNssfContext() {
 	}
 }
 
-func initNfService(serviceName []models.ServiceName, version string) (
-	nfService map[models.ServiceName]models.NfService,
+func initNfService(serviceName []models.ServiceName) (
+	nfService map[models.ServiceName]models.NFService,
 ) {
-	versionUri := "v" + strings.Split(version, ".")[0]
-	nfService = make(map[models.ServiceName]models.NfService)
+	nfService = make(map[models.ServiceName]models.NFService)
 	for idx, name := range serviceName {
-		nfService[name] = models.NfService{
+		apiFullVersion, apiVersionInURI := getServiceVersion(name)
+		ipEndPoint := models.NewIpEndPoint()
+		ipEndPoint.SetIpv4Address(nssfContext.RegisterIPv4)
+		ipEndPoint.SetTransport(models.TRANSPORTPROTOCOL_TCP)
+		ipEndPoint.SetPort(int32(nssfContext.SBIPort))
+		nfService[name] = models.NFService{
 			ServiceInstanceId: strconv.Itoa(idx),
 			ServiceName:       name,
-			Versions: &[]models.NfServiceVersion{
+			Versions: []models.NFServiceVersion{
 				{
-					ApiFullVersion:  version,
-					ApiVersionInUri: versionUri,
+					ApiFullVersion:  apiFullVersion,
+					ApiVersionInUri: apiVersionInURI,
 				},
 			},
 			Scheme:          nssfContext.UriScheme,
-			NfServiceStatus: models.NfServiceStatus_REGISTERED,
-			ApiPrefix:       GetIpv4Uri(),
-			IpEndPoints: &[]models.IpEndPoint{
-				{
-					Ipv4Address: nssfContext.RegisterIPv4,
-					Transport:   models.TransportProtocol_TCP,
-					Port:        int32(nssfContext.SBIPort),
-				},
-			},
+			NfServiceStatus: models.NFSERVICESTATUS_REGISTERED,
+			ApiPrefix:       openapi.PtrString(GetIpv4Uri()),
+			IpEndPoints:     []models.IpEndPoint{*ipEndPoint},
 		}
 	}
 
 	return
+}
+
+func getServiceVersion(serviceName models.ServiceName) (apiFullVersion, apiVersionInURI string) {
+	switch serviceName {
+	case models.SERVICENAME_NNSSF_NSSELECTION:
+		return nsSelectionAPIFullVersion, nsSelectionAPIVersionInURI
+	case models.SERVICENAME_NNSSF_NSSAIAVAILABILITY:
+		return nssaiAvailabilityAPIFullVersion, nssaiAvailabilityAPIVersionInURI
+	default:
+		return factory.NSSF_EXPECTED_CONFIG_VERSION, "v" + strings.Split(factory.NSSF_EXPECTED_CONFIG_VERSION, ".")[0]
+	}
 }
 
 func GetIpv4Uri() string {

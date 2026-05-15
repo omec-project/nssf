@@ -17,7 +17,8 @@ import (
 
 	"github.com/omec-project/nssf/factory"
 	"github.com/omec-project/nssf/logger"
-	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/v2"
+	"github.com/omec-project/openapi/v2/models"
 )
 
 // Title in Problem Details for NSSF HTTP APIs
@@ -71,7 +72,7 @@ func CheckSupportedSnssaiInPlmn(snssai models.Snssai, plmnId models.PlmnId) bool
 		logger.Util.Warnf("no supported S-NSSAI list of PLMNID %+v in NSSF configuration", plmnId)
 		return false
 	}
-	_, found = supportedSnssaiList[snssai]
+	_, found = supportedSnssaiList[factory.SnssaiToKey(snssai)]
 	return found
 }
 
@@ -92,7 +93,7 @@ func CheckSupportedNssaiInPlmn(nssai []models.Snssai, plmnId models.PlmnId) bool
 		if CheckStandardSnssai(snssai) {
 			continue
 		}
-		_, found = supportedSnssaiList[snssai]
+		_, found = supportedSnssaiList[factory.SnssaiToKey(snssai)]
 		if !found {
 			return false
 		}
@@ -104,10 +105,11 @@ func CheckSupportedNssaiInPlmn(nssai []models.Snssai, plmnId models.PlmnId) bool
 func CheckSupportedSnssaiInTa(snssai models.Snssai, tai models.Tai) bool {
 	factory.ConfigLock.RLock()
 	defer factory.ConfigLock.RUnlock()
+	targetSnssaiKey := factory.SnssaiToKey(snssai)
 	for _, taConfig := range factory.NssfConfig.Configuration.TaList {
 		if reflect.DeepEqual(*taConfig.Tai, tai) {
 			for _, supportedSnssai := range taConfig.SupportedSnssaiList {
-				if supportedSnssai == snssai {
+				if factory.SnssaiToKey(supportedSnssai) == targetSnssaiKey {
 					return true
 				}
 			}
@@ -130,7 +132,7 @@ func CheckSupportedNssaiAvailabilityData(
 	snssai models.Snssai, tai models.Tai, s []models.SupportedNssaiAvailabilityData,
 ) bool {
 	for _, supportedNssaiAvailabilityData := range s {
-		if reflect.DeepEqual(*supportedNssaiAvailabilityData.Tai, tai) &&
+		if reflect.DeepEqual(supportedNssaiAvailabilityData.Tai, tai) &&
 			CheckSnssaiInNssai(snssai, supportedNssaiAvailabilityData.SupportedSnssaiList) {
 			return true
 		}
@@ -161,7 +163,7 @@ func CheckSupportedSnssaiInAmfTa(snssai models.Snssai, nfId string, tai models.T
 func CheckAllowedNssaiInAmfTa(allowedNssaiList []models.AllowedNssai, nfId string, tai models.Tai) bool {
 	for _, allowedNssai := range allowedNssaiList {
 		for _, allowedSnssai := range allowedNssai.AllowedSnssaiList {
-			if CheckSupportedSnssaiInAmfTa(*allowedSnssai.AllowedSnssai, nfId, tai) {
+			if CheckSupportedSnssaiInAmfTa(allowedSnssai.AllowedSnssai, nfId, tai) {
 				continue
 			} else {
 				return false
@@ -174,7 +176,7 @@ func CheckAllowedNssaiInAmfTa(allowedNssaiList []models.AllowedNssai, nfId strin
 // Check whether S-NSSAI is standard or non-standard value
 // A standard S-NSSAI is only comprised of a standardized SST value and no SD
 func CheckStandardSnssai(snssai models.Snssai) bool {
-	if snssai.Sst >= 1 && snssai.Sst <= 3 && snssai.Sd == "" {
+	if snssai.GetSst() >= 1 && snssai.GetSst() <= 3 && snssai.GetSd() == "" {
 		return true
 	}
 	return false
@@ -182,8 +184,9 @@ func CheckStandardSnssai(snssai models.Snssai) bool {
 
 // Check whether the NSSAI contains the specific S-NSSAI
 func CheckSnssaiInNssai(targetSnssai models.Snssai, nssai []models.Snssai) bool {
+	targetSnssaiKey := factory.SnssaiToKey(targetSnssai)
 	for _, snssai := range nssai {
-		if snssai == targetSnssai {
+		if factory.SnssaiToKey(snssai) == targetSnssaiKey {
 			return true
 		}
 	}
@@ -206,8 +209,9 @@ func GetMappingOfPlmnFromConfig(homePlmnId models.PlmnId) []models.MappingOfSnss
 func GetNsiInformationListFromConfig(snssai models.Snssai) []models.NsiInformation {
 	factory.ConfigLock.RLock()
 	defer factory.ConfigLock.RUnlock()
+	targetKey := factory.SnssaiToKey(snssai)
 	for _, nsiConfig := range factory.NssfConfig.Configuration.NsiList {
-		if *nsiConfig.Snssai == snssai {
+		if factory.SnssaiToKey(*nsiConfig.Snssai) == targetKey {
 			return nsiConfig.NsiInformationList
 		}
 	}
@@ -228,13 +232,17 @@ func GetAccessTypeFromConfig(tai models.Tai) models.AccessType {
 		logger.Util.Errorf("marshal error in GetAccessTypeFromConfig: %+v", err)
 	}
 	logger.Util.Warnf("no TA %s in NSSF configuration", e)
-	return models.AccessType__3_GPP_ACCESS
+	return models.ACCESSTYPE__3_GPP_ACCESS
 }
 
 // Get restricted S-NSSAI list of the given TAI from configuration
 func GetRestrictedSnssaiListFromConfig(tai models.Tai) []models.RestrictedSnssai {
 	factory.ConfigLock.RLock()
 	defer factory.ConfigLock.RUnlock()
+	return getRestrictedSnssaiListFromConfigLocked(tai)
+}
+
+func getRestrictedSnssaiListFromConfigLocked(tai models.Tai) []models.RestrictedSnssai {
 	for _, taConfig := range factory.NssfConfig.Configuration.TaList {
 		if reflect.DeepEqual(*taConfig.Tai, tai) {
 			if len(taConfig.RestrictedSnssaiList) != 0 {
@@ -255,15 +263,16 @@ func GetRestrictedSnssaiListFromConfig(tai models.Tai) []models.RestrictedSnssai
 // Get authorized NSSAI availability data of the given NF ID and TAI from configuration
 func AuthorizeOfAmfTaFromConfig(nfId string, tai models.Tai) (models.AuthorizedNssaiAvailabilityData, error) {
 	var authorizedNssaiAvailabilityData models.AuthorizedNssaiAvailabilityData
-	authorizedNssaiAvailabilityData.Tai = new(models.Tai)
-	*authorizedNssaiAvailabilityData.Tai = tai
+	authorizedNssaiAvailabilityData.Tai = tai
 
+	factory.ConfigLock.RLock()
+	defer factory.ConfigLock.RUnlock()
 	for _, amfConfig := range factory.NssfConfig.Configuration.AmfList {
 		if amfConfig.NfId == nfId {
 			for _, supportedNssaiAvailabilityData := range amfConfig.SupportedNssaiAvailabilityData {
-				if reflect.DeepEqual(*supportedNssaiAvailabilityData.Tai, tai) {
+				if reflect.DeepEqual(supportedNssaiAvailabilityData.Tai, tai) {
 					authorizedNssaiAvailabilityData.SupportedSnssaiList = supportedNssaiAvailabilityData.SupportedSnssaiList
-					authorizedNssaiAvailabilityData.RestrictedSnssaiList = GetRestrictedSnssaiListFromConfig(tai)
+					authorizedNssaiAvailabilityData.RestrictedSnssaiList = getRestrictedSnssaiListFromConfigLocked(tai)
 
 					// TODO: Sort the returned slice
 					return authorizedNssaiAvailabilityData, nil
@@ -291,10 +300,9 @@ func AuthorizeOfAmfFromConfig(nfId string) ([]models.AuthorizedNssaiAvailability
 		if amfConfig.NfId == nfId {
 			for _, supportedNssaiAvailabilityData := range amfConfig.SupportedNssaiAvailabilityData {
 				var authorizedNssaiAvailabilityData models.AuthorizedNssaiAvailabilityData
-				authorizedNssaiAvailabilityData.Tai = new(models.Tai)
-				*authorizedNssaiAvailabilityData.Tai = *supportedNssaiAvailabilityData.Tai
+				authorizedNssaiAvailabilityData.Tai = supportedNssaiAvailabilityData.Tai
 				authorizedNssaiAvailabilityData.SupportedSnssaiList = supportedNssaiAvailabilityData.SupportedSnssaiList
-				authorizedNssaiAvailabilityData.RestrictedSnssaiList = GetRestrictedSnssaiListFromConfig(*authorizedNssaiAvailabilityData.Tai)
+				authorizedNssaiAvailabilityData.RestrictedSnssaiList = getRestrictedSnssaiListFromConfigLocked(authorizedNssaiAvailabilityData.Tai)
 
 				authorizedNssaiAvailabilityDataList = append(authorizedNssaiAvailabilityDataList, authorizedNssaiAvailabilityData)
 			}
@@ -309,14 +317,15 @@ func AuthorizeOfAmfFromConfig(nfId string) ([]models.AuthorizedNssaiAvailability
 func AuthorizeOfTaListFromConfig(taiList []models.Tai) []models.AuthorizedNssaiAvailabilityData {
 	var authorizedNssaiAvailabilityDataList []models.AuthorizedNssaiAvailabilityData
 
+	factory.ConfigLock.RLock()
+	defer factory.ConfigLock.RUnlock()
 	for _, taConfig := range factory.NssfConfig.Configuration.TaList {
 		for _, tai := range taiList {
 			if reflect.DeepEqual(*taConfig.Tai, tai) {
 				var authorizedNssaiAvailabilityData models.AuthorizedNssaiAvailabilityData
-				authorizedNssaiAvailabilityData.Tai = new(models.Tai)
-				*authorizedNssaiAvailabilityData.Tai = tai
+				authorizedNssaiAvailabilityData.Tai = tai
 				authorizedNssaiAvailabilityData.SupportedSnssaiList = taConfig.SupportedSnssaiList
-				authorizedNssaiAvailabilityData.RestrictedSnssaiList = GetRestrictedSnssaiListFromConfig(tai)
+				authorizedNssaiAvailabilityData.RestrictedSnssaiList = getRestrictedSnssaiListFromConfigLocked(tai)
 
 				authorizedNssaiAvailabilityDataList = append(authorizedNssaiAvailabilityDataList, authorizedNssaiAvailabilityData)
 			}
@@ -330,7 +339,7 @@ func FindMappingWithServingSnssai(
 	snssai models.Snssai, mappings []models.MappingOfSnssai,
 ) (models.MappingOfSnssai, bool) {
 	for _, mapping := range mappings {
-		if *mapping.ServingSnssai == snssai {
+		if factory.SnssaiToKey(mapping.ServingSnssai) == factory.SnssaiToKey(snssai) {
 			return mapping, true
 		}
 	}
@@ -340,7 +349,7 @@ func FindMappingWithServingSnssai(
 // Find target S-NSSAI mapping with home S-NSSAIs from mapping of S-NSSAI(s)
 func FindMappingWithHomeSnssai(snssai models.Snssai, mappings []models.MappingOfSnssai) (models.MappingOfSnssai, bool) {
 	for _, mapping := range mappings {
-		if *mapping.HomeSnssai == snssai {
+		if factory.SnssaiToKey(mapping.HomeSnssai) == factory.SnssaiToKey(snssai) {
 			return mapping, true
 		}
 	}
@@ -392,7 +401,7 @@ func AddAmfInformation(tai models.Tai, authorizedNetworkSliceInfo *models.Author
 		hitAllowedNssai := true
 		for _, allowedNssai := range authorizedNetworkSliceInfo.AllowedNssaiList {
 			for _, allowedSnssai := range allowedNssai.AllowedSnssaiList {
-				if CheckSupportedNssaiAvailabilityData(*allowedSnssai.AllowedSnssai,
+				if CheckSupportedNssaiAvailabilityData(allowedSnssai.AllowedSnssai,
 					tai, amfSetConfig.SupportedNssaiAvailabilityData) {
 					continue
 				} else {
@@ -414,9 +423,9 @@ func AddAmfInformation(tai models.Tai, authorizedNetworkSliceInfo *models.Author
 				authorizedNetworkSliceInfo.CandidateAmfList = append(authorizedNetworkSliceInfo.CandidateAmfList, amfSetConfig.AmfList...)
 			} else {
 				// TODO: Possibly querying the NRF
-				authorizedNetworkSliceInfo.TargetAmfSet = amfSetConfig.AmfSetId
+				authorizedNetworkSliceInfo.TargetAmfSet = openapi.PtrString(amfSetConfig.AmfSetId)
 				// The API URI of the NRF may be included if target AMF Set is included
-				authorizedNetworkSliceInfo.NrfAmfSet = amfSetConfig.NrfAmfSet
+				authorizedNetworkSliceInfo.NrfAmfSet = openapi.PtrString(amfSetConfig.NrfAmfSet)
 			}
 			return
 		}
@@ -429,7 +438,7 @@ func AddAmfInformation(tai models.Tai, authorizedNetworkSliceInfo *models.Author
 		hitAllowedNssai := true
 		for _, allowedNssai := range authorizedNetworkSliceInfo.AllowedNssaiList {
 			for _, allowedSnssai := range allowedNssai.AllowedSnssaiList {
-				if CheckSupportedNssaiAvailabilityData(*allowedSnssai.AllowedSnssai,
+				if CheckSupportedNssaiAvailabilityData(allowedSnssai.AllowedSnssai,
 					tai, amfConfig.SupportedNssaiAvailabilityData) {
 					continue
 				} else {

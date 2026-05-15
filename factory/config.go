@@ -11,7 +11,7 @@
 package factory
 
 import (
-	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/v2/models"
 	utilLogger "github.com/omec-project/util/logger"
 )
 
@@ -78,7 +78,13 @@ type TaConfig struct {
 	RestrictedSnssaiList []models.RestrictedSnssai `yaml:"restrictedSnssaiList,omitempty"`
 }
 
-type SupportedNssaiInPlmn map[models.PlmnId]map[models.Snssai]struct{}
+// SnssaiKey is used to avoid using models.Snssai as map key directly due to pointer field issue
+type SnssaiKey struct {
+	Sst int32
+	Sd  string
+}
+
+type SupportedNssaiInPlmn map[models.PlmnId]map[SnssaiKey]struct{}
 
 type NsiConfig struct {
 	Snssai             *models.Snssai          `yaml:"snssai"`
@@ -101,6 +107,14 @@ type MappingFromPlmnConfig struct {
 type Subscription struct {
 	SubscriptionData *models.NssfEventSubscriptionCreateData `yaml:"subscriptionData"`
 	SubscriptionId   string                                  `yaml:"subscriptionId"`
+}
+
+// Helper function to convert models.Snssai to SnssaiKey
+func SnssaiToKey(s models.Snssai) SnssaiKey {
+	return SnssaiKey{
+		Sst: s.GetSst(),
+		Sd:  s.GetSd(),
+	}
 }
 
 func (c *Config) GetVersion() string {

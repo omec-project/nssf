@@ -1,7 +1,6 @@
+// Copyright (c) 2026 Intel Corporation
 // Copyright 2019 free5GC.org
-//
 // SPDX-License-Identifier: Apache-2.0
-//
 
 /*
  * NSSF NS Selection
@@ -19,15 +18,198 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/omec-project/nssf/logger"
 	stats "github.com/omec-project/nssf/metrics"
 	"github.com/omec-project/nssf/plugin"
 	"github.com/omec-project/nssf/util"
-	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/v2/models"
+	"github.com/omec-project/openapi/v2/utils"
 	"github.com/omec-project/util/httpwrapper"
 )
+
+func hasExplodedQueryParam(query url.Values, prefix string) bool {
+	for key := range query {
+		if strings.HasPrefix(key, prefix+"[") {
+			return true
+		}
+	}
+	return false
+}
+
+func parseExplodedSnssai(query url.Values, prefix string) (models.Snssai, bool, error) {
+	var snssai models.Snssai
+	var found bool
+
+	if sst := query.Get(prefix + "[sst]"); sst != "" {
+		sstValue, err := strconv.ParseInt(sst, 10, 32)
+		if err != nil {
+			return snssai, false, err
+		}
+		snssai.SetSst(int32(sstValue))
+		found = true
+	}
+	if sd := query.Get(prefix + "[sd]"); sd != "" {
+		snssai.SetSd(sd)
+		found = true
+	}
+
+	return snssai, found, nil
+}
+
+func parseExplodedBool(query url.Values, key string) (*bool, error) {
+	value := query.Get(key)
+	if value == "" {
+		return nil, nil
+	}
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return nil, err
+	}
+	return &parsed, nil
+}
+
+func parseExplodedSnssaiList(query url.Values, prefix string) ([]models.Snssai, error) {
+	sstValues := query[prefix+"[sst]"]
+	sdValues := query[prefix+"[sd]"]
+	count := max(len(sstValues), len(sdValues))
+	if count == 0 {
+		return nil, nil
+	}
+
+	items := make([]models.Snssai, 0, count)
+	for i := range count {
+		var item models.Snssai
+		var found bool
+
+		if i < len(sstValues) && sstValues[i] != "" {
+			sstValue, err := strconv.ParseInt(sstValues[i], 10, 32)
+			if err != nil {
+				return nil, err
+			}
+			item.SetSst(int32(sstValue))
+			found = true
+		}
+		if i < len(sdValues) && sdValues[i] != "" {
+			item.SetSd(sdValues[i])
+			found = true
+		}
+		if found {
+			items = append(items, item)
+		}
+	}
+
+	return items, nil
+}
+
+func parseExplodedSubscribedSnssaiList(query url.Values, prefix string) ([]models.SubscribedSnssai, error) {
+	subscribedSnssai, err := parseExplodedSnssaiList(query, prefix+"[subscribedSnssai]")
+	if err != nil {
+		return nil, err
+	}
+	defaultValues := query[prefix+"[defaultIndication]"]
+	nssrgValues := query[prefix+"[subscribedNsSrgList]"]
+	count := max(len(subscribedSnssai), max(len(defaultValues), len(nssrgValues)))
+	if count == 0 {
+		return nil, nil
+	}
+
+	items := make([]models.SubscribedSnssai, 0, count)
+	for i := range count {
+		var item models.SubscribedSnssai
+		var found bool
+
+		if i < len(subscribedSnssai) {
+			item.SubscribedSnssai = subscribedSnssai[i]
+			found = true
+		}
+		if i < len(defaultValues) && defaultValues[i] != "" {
+			defaultValue, err := strconv.ParseBool(defaultValues[i])
+			if err != nil {
+				return nil, err
+			}
+			item.DefaultIndication = &defaultValue
+			found = true
+		}
+		if len(subscribedSnssai) == 1 && len(nssrgValues) > 1 {
+			item.SubscribedNsSrgList = append([]string(nil), nssrgValues...)
+			found = true
+		} else if i < len(nssrgValues) && nssrgValues[i] != "" {
+			item.SubscribedNsSrgList = []string{nssrgValues[i]}
+			found = true
+		}
+		if found {
+			items = append(items, item)
+		}
+	}
+
+	return items, nil
+}
+
+func parseExplodedMappingOfSnssaiList(query url.Values, prefix string) ([]models.MappingOfSnssai, error) {
+	servingSnssai, err := parseExplodedSnssaiList(query, prefix+"[servingSnssai]")
+	if err != nil {
+		return nil, err
+	}
+	homeSnssai, err := parseExplodedSnssaiList(query, prefix+"[homeSnssai]")
+	if err != nil {
+		return nil, err
+	}
+	count := max(len(servingSnssai), len(homeSnssai))
+	if count == 0 {
+		return nil, nil
+	}
+
+	items := make([]models.MappingOfSnssai, 0, count)
+	for i := range count {
+		var item models.MappingOfSnssai
+		var found bool
+
+		if i < len(servingSnssai) {
+			item.ServingSnssai = servingSnssai[i]
+			found = true
+		}
+		if i < len(homeSnssai) {
+			item.HomeSnssai = homeSnssai[i]
+			found = true
+		}
+		if found {
+			items = append(items, item)
+		}
+	}
+
+	return items, nil
+}
+
+func parseExplodedPlmnId(query url.Values, prefix string) *models.PlmnId {
+	mcc := query.Get(prefix + "[mcc]")
+	mnc := query.Get(prefix + "[mnc]")
+	if mcc == "" && mnc == "" {
+		return nil
+	}
+	plmnId := models.NewPlmnId(mcc, mnc)
+	return plmnId
+}
+
+func parseExplodedTai(query url.Values, prefix string) *models.Tai {
+	plmnId := parseExplodedPlmnId(query, prefix+"[plmnId]")
+	tac := query.Get(prefix + "[tac]")
+	nid := query.Get(prefix + "[nid]")
+	if plmnId == nil && tac == "" && nid == "" {
+		return nil
+	}
+	tai := models.NewTaiWithDefaults()
+	if plmnId != nil {
+		tai.SetPlmnId(*plmnId)
+	}
+	tai.SetTac(tac)
+	if nid != "" {
+		tai.SetNid(nid)
+	}
+	return tai
+}
 
 // Parse NSSelectionGet query parameter
 func parseQueryParameter(query url.Values) (plugin.NsselectionQueryParameter, error) {
@@ -37,44 +219,110 @@ func parseQueryParameter(query url.Values) (plugin.NsselectionQueryParameter, er
 	)
 
 	if query.Get("nf-type") != "" {
-		param.NfType = new(models.NfType)
-		*param.NfType = models.NfType(query.Get("nf-type"))
+		nfType := models.NFType(query.Get("nf-type"))
+		param.NfType = &nfType
 	}
 
 	param.NfId = query.Get("nf-id")
 
 	if query.Get("slice-info-request-for-registration") != "" {
-		param.SliceInfoRequestForRegistration = new(models.SliceInfoForRegistration)
+		param.SliceInfoRequestForRegistration = models.NewSliceInfoForRegistration()
 		err = json.NewDecoder(strings.NewReader(
 			query.Get("slice-info-request-for-registration"))).Decode(param.SliceInfoRequestForRegistration)
 		if err != nil {
 			return param, err
 		}
+	} else if hasExplodedQueryParam(query, "slice-info-request-for-registration") {
+		param.SliceInfoRequestForRegistration = models.NewSliceInfoForRegistration()
+		if subscribedNssai, parseErr := parseExplodedSubscribedSnssaiList(query, "slice-info-request-for-registration[subscribedNssai]"); parseErr != nil {
+			return param, parseErr
+		} else if len(subscribedNssai) != 0 {
+			param.SliceInfoRequestForRegistration.SubscribedNssai = subscribedNssai
+		}
+		if sNssaiForMapping, parseErr := parseExplodedSnssaiList(query, "slice-info-request-for-registration[sNssaiForMapping]"); parseErr != nil {
+			return param, parseErr
+		} else if len(sNssaiForMapping) != 0 {
+			param.SliceInfoRequestForRegistration.SNssaiForMapping = sNssaiForMapping
+		}
+		if requestedNssai, parseErr := parseExplodedSnssaiList(query, "slice-info-request-for-registration[requestedNssai]"); parseErr != nil {
+			return param, parseErr
+		} else if len(requestedNssai) != 0 {
+			param.SliceInfoRequestForRegistration.RequestedNssai = requestedNssai
+		}
+		if mappingOfNssai, parseErr := parseExplodedMappingOfSnssaiList(query, "slice-info-request-for-registration[mappingOfNssai]"); parseErr != nil {
+			return param, parseErr
+		} else if len(mappingOfNssai) != 0 {
+			param.SliceInfoRequestForRegistration.MappingOfNssai = mappingOfNssai
+		}
+		if defaultConfiguredSnssaiInd, parseErr := parseExplodedBool(query, "slice-info-request-for-registration[defaultConfiguredSnssaiInd]"); parseErr != nil {
+			return param, parseErr
+		} else if defaultConfiguredSnssaiInd != nil {
+			param.SliceInfoRequestForRegistration.DefaultConfiguredSnssaiInd = defaultConfiguredSnssaiInd
+		}
+		if requestMapping, parseErr := parseExplodedBool(query, "slice-info-request-for-registration[requestMapping]"); parseErr != nil {
+			return param, parseErr
+		} else if requestMapping != nil {
+			param.SliceInfoRequestForRegistration.RequestMapping = requestMapping
+		}
+		if ueSupNssrgInd, parseErr := parseExplodedBool(query, "slice-info-request-for-registration[ueSupNssrgInd]"); parseErr != nil {
+			return param, parseErr
+		} else if ueSupNssrgInd != nil {
+			param.SliceInfoRequestForRegistration.UeSupNssrgInd = ueSupNssrgInd
+		}
+		if suppressNssrgInd, parseErr := parseExplodedBool(query, "slice-info-request-for-registration[suppressNssrgInd]"); parseErr != nil {
+			return param, parseErr
+		} else if suppressNssrgInd != nil {
+			param.SliceInfoRequestForRegistration.SuppressNssrgInd = suppressNssrgInd
+		}
+		if nsagSupported, parseErr := parseExplodedBool(query, "slice-info-request-for-registration[nsagSupported]"); parseErr != nil {
+			return param, parseErr
+		} else if nsagSupported != nil {
+			param.SliceInfoRequestForRegistration.NsagSupported = nsagSupported
+		}
 	}
 
 	if query.Get("slice-info-request-for-pdu-session") != "" {
-		param.SliceInfoRequestForPduSession = new(models.SliceInfoForPduSession)
+		param.SliceInfoRequestForPduSession = models.NewSliceInfoForPDUSessionWithDefaults()
 		err = json.NewDecoder(strings.NewReader(
 			query.Get("slice-info-request-for-pdu-session"))).Decode(param.SliceInfoRequestForPduSession)
 		if err != nil {
 			return param, err
 		}
+	} else if hasExplodedQueryParam(query, "slice-info-request-for-pdu-session") {
+		param.SliceInfoRequestForPduSession = models.NewSliceInfoForPDUSessionWithDefaults()
+		if snssai, found, parseErr := parseExplodedSnssai(query, "slice-info-request-for-pdu-session[sNssai]"); parseErr != nil {
+			return param, parseErr
+		} else if found {
+			param.SliceInfoRequestForPduSession.SNssai = snssai
+		}
+		if roamingIndication := query.Get("slice-info-request-for-pdu-session[roamingIndication]"); roamingIndication != "" {
+			param.SliceInfoRequestForPduSession.RoamingIndication = models.RoamingIndication(roamingIndication)
+		}
+		if homeSnssai, found, parseErr := parseExplodedSnssai(query, "slice-info-request-for-pdu-session[homeSnssai]"); parseErr != nil {
+			return param, parseErr
+		} else if found {
+			param.SliceInfoRequestForPduSession.HomeSnssai = &homeSnssai
+		}
 	}
 
 	if query.Get("home-plmn-id") != "" {
-		param.HomePlmnId = new(models.PlmnId)
+		param.HomePlmnId = models.NewPlmnIdWithDefaults()
 		err = json.NewDecoder(strings.NewReader(query.Get("home-plmn-id"))).Decode(param.HomePlmnId)
 		if err != nil {
 			return param, err
 		}
+	} else if hasExplodedQueryParam(query, "home-plmn-id") {
+		param.HomePlmnId = parseExplodedPlmnId(query, "home-plmn-id")
 	}
 
 	if query.Get("tai") != "" {
-		param.Tai = new(models.Tai)
+		param.Tai = models.NewTaiWithDefaults()
 		err = json.NewDecoder(strings.NewReader(query.Get("tai"))).Decode(param.Tai)
 		if err != nil {
 			return param, err
 		}
+	} else if hasExplodedQueryParam(query, "tai") {
+		param.Tai = parseExplodedTai(query, "tai")
 	}
 
 	if query.Get("supported-features") != "" {
@@ -86,8 +334,8 @@ func parseQueryParameter(query url.Values) (plugin.NsselectionQueryParameter, er
 
 // Check if the NF service consumer is authorized
 // TODO: Check if the NF service consumer is legal with local configuration, or possibly after querying NRF through `nf-id` e.g. Whether the V-NSSF is authorized
-func checkNfServiceConsumer(nfType models.NfType) error {
-	if nfType != models.NfType_AMF && nfType != models.NfType_NSSF {
+func checkNfServiceConsumer(nfType models.NFType) error {
+	if nfType != models.NFTYPE_AMF && nfType != models.NFTYPE_NSSF {
 		return fmt.Errorf("`nf-type`:'%s' is not authorized to retrieve the slice selection information", string(nfType))
 	}
 
@@ -110,12 +358,9 @@ func HandleNSSelectionGet(request *httpwrapper.Request) *httpwrapper.Response {
 		return httpwrapper.NewResponse(http.StatusOK, nil, response)
 	} else if problemDetails != nil {
 		stats.IncrementNssfNsSelectionsStats(nfType, nfId, "FAILURE")
-		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	}
-	problemDetails = &models.ProblemDetails{
-		Status: http.StatusForbidden,
-		Cause:  "UNSPECIFIED",
-	}
+	problemDetails = utils.ProblemDetailsUnspecified()
 	stats.IncrementNssfNsSelectionsStats(nfType, nfId, "FAILURE")
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
@@ -136,24 +381,48 @@ func NSSelectionGetProcedure(query url.Values) (*models.AuthorizedNetworkSliceIn
 	// Parse query parameter
 	param, err := parseQueryParameter(query)
 	if err != nil {
-		// status = http.StatusBadRequest
-		problemDetails = &models.ProblemDetails{
-			Title:  util.MALFORMED_REQUEST,
-			Status: http.StatusBadRequest,
-			Detail: "[Query Parameter] " + err.Error(),
-		}
+		problemDetail := "[Query Parameter] " + err.Error()
+		logger.Nsselection.Errorln(problemDetail)
+		problemDetails = utils.ProblemDetailsMalformedRequestSyntax(problemDetail)
 		return nil, problemDetails
 	}
 
 	// Check permission of NF service consumer
+	if param.NfType == nil {
+		problemDetail := "[Query Parameter] `nf-type` is required"
+		problemDetails = models.NewProblemDetails()
+		problemDetails.SetTitle(util.INVALID_REQUEST)
+		problemDetails.SetStatus(http.StatusBadRequest)
+		problemDetails.SetDetail(problemDetail)
+		invalidParams := []models.InvalidParam{{
+			Param:  "nf-type",
+			Reason: &problemDetail,
+		}}
+		problemDetails.SetInvalidParams(invalidParams)
+		return nil, problemDetails
+	}
+
 	err = checkNfServiceConsumer(*param.NfType)
 	if err != nil {
 		// status = http.StatusForbidden
-		problemDetails = &models.ProblemDetails{
-			Title:  util.UNAUTHORIZED_CONSUMER,
-			Status: http.StatusForbidden,
-			Detail: err.Error(),
+		problemDetails = models.NewProblemDetails()
+		problemDetails.SetTitle(util.UNAUTHORIZED_CONSUMER)
+		problemDetails.SetStatus(http.StatusForbidden)
+		problemDetails.SetDetail(err.Error())
+		return nil, problemDetails
+	}
+
+	if param.SliceInfoRequestForRegistration == nil && param.SliceInfoRequestForPduSession == nil {
+		problemDetail := "[Query Parameter] one of `slice-info-request-for-registration` or `slice-info-request-for-pdu-session` is required"
+		problemDetails = models.NewProblemDetails()
+		problemDetails.SetTitle(util.INVALID_REQUEST)
+		problemDetails.SetStatus(http.StatusBadRequest)
+		problemDetails.SetDetail(problemDetail)
+		invalidParams := []models.InvalidParam{
+			{Param: "slice-info-request-for-registration", Reason: &problemDetail},
+			{Param: "slice-info-request-for-pdu-session", Reason: &problemDetail},
 		}
+		problemDetails.SetInvalidParams(invalidParams)
 		return nil, problemDetails
 	}
 

@@ -9,20 +9,21 @@ import (
 	"testing"
 
 	"github.com/omec-project/nssf/factory"
-	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/v2"
+	"github.com/omec-project/openapi/v2/models"
 )
 
 func TestCheckSupportedSnssaiInPlmn(t *testing.T) {
 	plmn1 := models.PlmnId{Mcc: "001", Mnc: "01"}
 	plmn2 := models.PlmnId{Mcc: "002", Mnc: "02"}
 
-	snssai1 := models.Snssai{Sst: 4, Sd: "000001"}
-	snssai2 := models.Snssai{Sst: 2, Sd: "000002"}
+	snssai1 := models.Snssai{Sst: 4, Sd: openapi.PtrString("000001")}
+	snssai2 := models.Snssai{Sst: 2, Sd: openapi.PtrString("000002")}
 	snssai3 := models.Snssai{Sst: 4}
 	standardSnssai := models.Snssai{Sst: 2}
 
 	supportedNssai := factory.SupportedNssaiInPlmn{
-		plmn1: {snssai1: struct{}{}},
+		plmn1: {factory.SnssaiToKey(snssai1): struct{}{}},
 	}
 
 	tests := []struct {
@@ -95,7 +96,7 @@ func TestCheckSupportedSnssaiInPlmn_EmptyConfig(t *testing.T) {
 	}
 
 	plmn := models.PlmnId{Mcc: "001", Mnc: "01"}
-	snssai := models.Snssai{Sst: 1, Sd: "000001"}
+	snssai := models.Snssai{Sst: 1, Sd: openapi.PtrString("000001")}
 
 	result := CheckSupportedSnssaiInPlmn(snssai, plmn)
 	if result != false {
@@ -110,11 +111,11 @@ func TestCheckSupportedSnssaiInPlmn_EmptySupportedNssaiButExistingPlmn(t *testin
 	}()
 
 	plmn := models.PlmnId{Mcc: "001", Mnc: "01"}
-	snssai := models.Snssai{Sst: 1, Sd: "000001"}
+	snssai := models.Snssai{Sst: 1, Sd: openapi.PtrString("000001")}
 
 	factory.NssfConfig = factory.Config{
 		Configuration: &factory.Configuration{
-			SupportedNssaiInPlmnList: factory.SupportedNssaiInPlmn{plmn: map[models.Snssai]struct{}{}},
+			SupportedNssaiInPlmnList: factory.SupportedNssaiInPlmn{plmn: map[factory.SnssaiKey]struct{}{}},
 		},
 	}
 
@@ -124,15 +125,44 @@ func TestCheckSupportedSnssaiInPlmn_EmptySupportedNssaiButExistingPlmn(t *testin
 	}
 }
 
+func TestCheckSupportedSnssaiInTa_UsesValueEqualityForSd(t *testing.T) {
+	originalFactoryConfig := factory.NssfConfig
+	defer func() {
+		factory.NssfConfig = originalFactoryConfig
+	}()
+
+	tai := models.Tai{
+		PlmnId: models.PlmnId{Mcc: "001", Mnc: "01"},
+		Tac:    "000001",
+	}
+	configuredSnssai := models.Snssai{Sst: 1, Sd: openapi.PtrString("010203")}
+	requestSnssai := models.Snssai{Sst: 1, Sd: openapi.PtrString("010203")}
+
+	factory.NssfConfig = factory.Config{
+		Configuration: &factory.Configuration{
+			TaList: []factory.TaConfig{
+				{
+					Tai:                 &tai,
+					SupportedSnssaiList: []models.Snssai{configuredSnssai},
+				},
+			},
+		},
+	}
+
+	if !CheckSupportedSnssaiInTa(requestSnssai, tai) {
+		t.Fatal("expected S-NSSAI with equal SST/SD values to be supported in TA")
+	}
+}
+
 func TestCheckSupportedNssaiInPlmn(t *testing.T) {
 	plmn := models.PlmnId{Mcc: "001", Mnc: "01"}
 
-	snssai1 := models.Snssai{Sst: 1, Sd: "000001"}
-	snssai2 := models.Snssai{Sst: 2, Sd: "000002"}
-	snssai3 := models.Snssai{Sst: 3, Sd: "000003"}
+	snssai1 := models.Snssai{Sst: 1, Sd: openapi.PtrString("000001")}
+	snssai2 := models.Snssai{Sst: 2, Sd: openapi.PtrString("000002")}
+	snssai3 := models.Snssai{Sst: 3, Sd: openapi.PtrString("000003")}
 
 	supportedNssai := factory.SupportedNssaiInPlmn{
-		plmn: {snssai1: struct{}{}, snssai2: struct{}{}},
+		plmn: {factory.SnssaiToKey(snssai1): struct{}{}, factory.SnssaiToKey(snssai2): struct{}{}},
 	}
 
 	tests := []struct {
@@ -205,7 +235,7 @@ func TestCheckSupportedNssaiInPlmn_EmptyConfig(t *testing.T) {
 	}
 
 	plmn := models.PlmnId{Mcc: "001", Mnc: "01"}
-	snssai := []models.Snssai{{Sst: 1, Sd: "000001"}}
+	snssai := []models.Snssai{{Sst: 1, Sd: openapi.PtrString("000001")}}
 
 	result := CheckSupportedNssaiInPlmn(snssai, plmn)
 	if result != false {
@@ -220,16 +250,44 @@ func TestCheckSupportedNssaiInPlmn_EmptySupportedNssaiButExistingPlmn(t *testing
 	}()
 
 	plmn := models.PlmnId{Mcc: "001", Mnc: "01"}
-	snssai := []models.Snssai{{Sst: 1, Sd: "000001"}}
+	snssai := []models.Snssai{{Sst: 1, Sd: openapi.PtrString("000001")}}
 
 	factory.NssfConfig = factory.Config{
 		Configuration: &factory.Configuration{
-			SupportedNssaiInPlmnList: factory.SupportedNssaiInPlmn{plmn: map[models.Snssai]struct{}{}},
+			SupportedNssaiInPlmnList: factory.SupportedNssaiInPlmn{plmn: map[factory.SnssaiKey]struct{}{}},
 		},
 	}
 
 	result := CheckSupportedNssaiInPlmn(snssai, plmn)
 	if result != false {
 		t.Errorf("Expected CheckSupportedNssaiInPlmn to be false, got `%v`", result)
+	}
+}
+
+func TestGetNsiInformationListFromConfig_UsesValueEqualityForSd(t *testing.T) {
+	originalFactoryConfig := factory.NssfConfig
+	defer func() {
+		factory.NssfConfig = originalFactoryConfig
+	}()
+
+	configuredSnssai := models.Snssai{Sst: 1, Sd: openapi.PtrString("010203")}
+	requestSnssai := models.Snssai{Sst: 1, Sd: openapi.PtrString("010203")}
+	expected := []models.NsiInformation{{NrfId: "nrf-1"}}
+
+	factory.NssfConfig = factory.Config{
+		Configuration: &factory.Configuration{
+			NsiList: []factory.NsiConfig{{
+				Snssai:             &configuredSnssai,
+				NsiInformationList: expected,
+			}},
+		},
+	}
+
+	result := GetNsiInformationListFromConfig(requestSnssai)
+	if len(result) != len(expected) {
+		t.Fatalf("expected %d NSI info entries, got %d", len(expected), len(result))
+	}
+	if result[0].GetNrfId() != expected[0].GetNrfId() {
+		t.Fatalf("expected NRF ID %q, got %q", expected[0].GetNrfId(), result[0].GetNrfId())
 	}
 }

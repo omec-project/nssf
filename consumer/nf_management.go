@@ -20,52 +20,64 @@ import (
 
 	nssfContext "github.com/omec-project/nssf/context"
 	"github.com/omec-project/nssf/logger"
-	"github.com/omec-project/openapi"
-	"github.com/omec-project/openapi/Nnrf_NFManagement"
-	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/v2"
+	"github.com/omec-project/openapi/v2/Nnrf_NFManagement"
+	"github.com/omec-project/openapi/v2/models"
 )
 
-func getNfProfile(currentNssfContext *nssfContext.NSSFContext, plmnConfig []models.PlmnId) (profile models.NfProfile, err error) {
+func getNfProfile(currentNssfContext *nssfContext.NSSFContext, plmnConfig []models.PlmnId) (profile *models.NFProfile, err error) {
 	if currentNssfContext == nil {
-		return models.NfProfile{}, fmt.Errorf("nssf context has not been intialized. NF profile cannot be built")
+		return &models.NFProfile{}, fmt.Errorf("nssf context has not been initialized. NF profile cannot be built")
 	}
-	profile.NfInstanceId = currentNssfContext.NfId
-	profile.NfType = models.NfType_NSSF
-	profile.NfStatus = models.NfStatus_REGISTERED
+	profile = models.NewNFProfileWithDefaults()
+	profile.SetNfInstanceId(currentNssfContext.NfId)
+	profile.SetNfType(models.NFTYPE_NSSF)
+	profile.SetNfStatus(models.NFSTATUS_REGISTERED)
 	if len(plmnConfig) > 0 {
 		plmnCopy := make([]models.PlmnId, len(plmnConfig))
 		copy(plmnCopy, plmnConfig)
-		profile.PlmnList = &plmnCopy
+		profile.SetPlmnList(plmnCopy)
 	}
-	profile.Ipv4Addresses = []string{currentNssfContext.RegisterIPv4}
-	var services []models.NfService
+	profile.SetIpv4Addresses([]string{currentNssfContext.RegisterIPv4})
+	var services []models.NFService
 	for _, nfService := range currentNssfContext.NfService {
 		services = append(services, nfService)
 	}
 	if len(services) > 0 {
-		profile.NfServices = &services
+		profile.SetNfServices(services)
 	}
 	return profile, err
 }
 
-var SendRegisterNFInstance = func(plmnConfig []models.PlmnId) (prof models.NfProfile, resourceNrfUri string, err error) {
+var SendRegisterNFInstance = func(plmnConfig []models.PlmnId) (prof *models.NFProfile, resourceNrfUri string, err error) {
 	nssfSelf := nssfContext.NSSF_Self()
 	nfProfile, err := getNfProfile(nssfSelf, plmnConfig)
 	if err != nil {
-		return models.NfProfile{}, "", err
+		return &models.NFProfile{}, "", err
 	}
 	configuration := Nnrf_NFManagement.NewConfiguration()
-	configuration.SetBasePath(nssfSelf.NrfUri)
+	serverConfig := &configuration.Servers[0]
+	if apiRootVar, exists := serverConfig.Variables["apiRoot"]; exists {
+		apiRootVar.DefaultValue = nssfSelf.NrfUri
+		serverConfig.Variables["apiRoot"] = apiRootVar
+	}
 	apiClient := Nnrf_NFManagement.NewAPIClient(configuration)
 
-	receivedNfProfile, res, err := apiClient.NFInstanceIDDocumentApi.RegisterNFInstance(context.TODO(), nfProfile.NfInstanceId, nfProfile)
-	logger.ConsumerLog.Debugf("RegisterNFInstance done using profile: %+v", nfProfile)
-
+	apiRegisterNFInstanceRequest := apiClient.NFInstanceIDDocumentAPI.RegisterNFInstance(context.TODO(), nfProfile.NfInstanceId)
+	apiRegisterNFInstanceRequest = apiRegisterNFInstanceRequest.NFProfile(*nfProfile)
+	receivedNfProfile, res, err := apiClient.NFInstanceIDDocumentAPI.RegisterNFInstanceExecute(apiRegisterNFInstanceRequest)
 	if err != nil {
-		return models.NfProfile{}, "", err
+		return &models.NFProfile{}, "", err
 	}
 	if res == nil {
-		return models.NfProfile{}, "", fmt.Errorf("no response from server")
+		return &models.NFProfile{}, "", fmt.Errorf("no response from server")
+	}
+	if res.Body != nil {
+		defer func() {
+			if bodyCloseErr := res.Body.Close(); bodyCloseErr != nil {
+				logger.AppLog.Errorf("RegisterNFInstance response body cannot close: %+v", bodyCloseErr)
+			}
+		}()
 	}
 
 	switch res.StatusCode {
@@ -84,34 +96,50 @@ var SendRegisterNFInstance = func(plmnConfig []models.PlmnId) (prof models.NfPro
 	}
 }
 
-var SendUpdateNFInstance = func(patchItem []models.PatchItem) (models.NfProfile, *models.ProblemDetails, error) {
+var SendUpdateNFInstance = func(patchItem []models.PatchItem) (*models.NFProfile, *models.ProblemDetails, error) {
 	logger.ConsumerLog.Debugln("send Update NFInstance")
 
 	nssfSelf := nssfContext.NSSF_Self()
 	configuration := Nnrf_NFManagement.NewConfiguration()
-	configuration.SetBasePath(nssfSelf.NrfUri)
+	serverConfig := &configuration.Servers[0]
+	if apiRootVar, exists := serverConfig.Variables["apiRoot"]; exists {
+		apiRootVar.DefaultValue = nssfSelf.NrfUri
+		serverConfig.Variables["apiRoot"] = apiRootVar
+	}
 	client := Nnrf_NFManagement.NewAPIClient(configuration)
 
 	var res *http.Response
-	receivedNfProfile, res, err := client.NFInstanceIDDocumentApi.UpdateNFInstance(context.Background(), nssfSelf.NfId, patchItem)
+	apiUpdateNFInstanceRequest := client.NFInstanceIDDocumentAPI.UpdateNFInstance(context.Background(), nssfSelf.NfId)
+	apiUpdateNFInstanceRequest = apiUpdateNFInstanceRequest.PatchItem(patchItem)
+	receivedNfProfile, res, err := client.NFInstanceIDDocumentAPI.UpdateNFInstanceExecute(apiUpdateNFInstanceRequest)
+	if res != nil && res.Body != nil {
+		defer func() {
+			if bodyCloseErr := res.Body.Close(); bodyCloseErr != nil {
+				logger.AppLog.Errorf("UpdateNFInstance response body cannot close: %+v", bodyCloseErr)
+			}
+		}()
+	}
 	if err != nil {
 		if openapiErr, ok := err.(openapi.GenericOpenAPIError); ok {
 			if model := openapiErr.Model(); model != nil {
 				if problem, ok := model.(models.ProblemDetails); ok {
-					return models.NfProfile{}, &problem, nil
+					return &models.NFProfile{}, &problem, nil
 				}
 			}
 		}
-		return models.NfProfile{}, nil, err
+		return &models.NFProfile{}, nil, err
 	}
 
 	if res == nil {
-		return models.NfProfile{}, nil, fmt.Errorf("no response from server")
+		return &models.NFProfile{}, nil, fmt.Errorf("no response from server")
 	}
 	if res.StatusCode == http.StatusOK || res.StatusCode == http.StatusNoContent {
+		if receivedNfProfile == nil {
+			return &models.NFProfile{}, nil, nil
+		}
 		return receivedNfProfile, nil, nil
 	}
-	return models.NfProfile{}, nil, fmt.Errorf("unexpected response code")
+	return &models.NFProfile{}, nil, fmt.Errorf("unexpected response code")
 }
 
 var SendDeregisterNFInstance = func() error {
@@ -120,10 +148,14 @@ var SendDeregisterNFInstance = func() error {
 	nssfSelf := nssfContext.NSSF_Self()
 	// Set client and set url
 	configuration := Nnrf_NFManagement.NewConfiguration()
-	configuration.SetBasePath(nssfSelf.NrfUri)
+	serverConfig := &configuration.Servers[0]
+	if apiRootVar, exists := serverConfig.Variables["apiRoot"]; exists {
+		apiRootVar.DefaultValue = nssfSelf.NrfUri
+		serverConfig.Variables["apiRoot"] = apiRootVar
+	}
 	client := Nnrf_NFManagement.NewAPIClient(configuration)
-
-	res, err := client.NFInstanceIDDocumentApi.DeregisterNFInstance(context.Background(), nssfSelf.NfId)
+	apiDeregisterNFInstanceRequest := client.NFInstanceIDDocumentAPI.DeregisterNFInstance(context.Background(), nssfSelf.NfId)
+	res, err := client.NFInstanceIDDocumentAPI.DeregisterNFInstanceExecute(apiDeregisterNFInstanceRequest)
 	if err != nil {
 		return err
 	}

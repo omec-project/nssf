@@ -10,17 +10,17 @@
 package plugin
 
 import (
-	"github.com/omec-project/openapi/models"
+	"github.com/omec-project/openapi/v2/models"
 )
 
 type NsselectionQueryParameter struct {
-	NfType *models.NfType `json:"nf-type"`
+	NfType *models.NFType `json:"nf-type"`
 
 	NfId string `json:"nf-id"`
 
 	SliceInfoRequestForRegistration *models.SliceInfoForRegistration `json:"slice-info-request-for-registration,omitempty"`
 
-	SliceInfoRequestForPduSession *models.SliceInfoForPduSession `json:"slice-info-request-for-pdu-session,omitempty"`
+	SliceInfoRequestForPduSession *models.SliceInfoForPDUSession `json:"slice-info-request-for-pdu-session,omitempty"`
 
 	HomePlmnId *models.PlmnId `json:"home-plmn-id,omitempty"`
 
