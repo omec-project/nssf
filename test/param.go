@@ -10,7 +10,7 @@
 package test
 
 import (
-	"github.com/omec-project/nssf/plugin"
+	"github.com/omec-project/nssf/producer"
 )
 
 var (
@@ -23,8 +23,8 @@ type TestingUtil struct {
 }
 
 type TestingNsselection struct {
-	GenerateNonRoamingQueryParameter func() plugin.NsselectionQueryParameter
-	GenerateRoamingQueryParameter    func() plugin.NsselectionQueryParameter
+	GenerateNonRoamingQueryParameter func() producer.NsselectionQueryParameter
+	GenerateRoamingQueryParameter    func() producer.NsselectionQueryParameter
 	ConfigFile                       string
 }
 

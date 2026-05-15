@@ -16,7 +16,6 @@ import (
 	"math/rand"
 	"net/http"
 
-	"github.com/omec-project/nssf/plugin"
 	"github.com/omec-project/nssf/util"
 	"github.com/omec-project/openapi/v2/models"
 )
@@ -32,7 +31,7 @@ func selectNsiInformation(nsiInformationList []models.NsiInformation) models.Nsi
 
 // Network slice selection for PDU session
 // The function is executed when the IE, `slice-info-for-pdu-session`, is provided in query parameters
-func nsselectionForPduSession(param plugin.NsselectionQueryParameter,
+func nsselectionForPduSession(param NsselectionQueryParameter,
 	authorizedNetworkSliceInfo *models.AuthorizedNetworkSliceInfo,
 	problemDetails *models.ProblemDetails,
 ) int {

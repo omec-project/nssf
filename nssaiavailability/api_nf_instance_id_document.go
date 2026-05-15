@@ -24,7 +24,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/omec-project/nssf/logger"
-	"github.com/omec-project/nssf/plugin"
 	"github.com/omec-project/nssf/producer"
 	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/models"
@@ -55,7 +54,7 @@ func HTTPNSSAIAvailabilityDelete(c *gin.Context) {
 // Updates an already existing S-NSSAIs per TA provided by the NF service consumer (e.g AMF)
 func HTTPNSSAIAvailabilityPatch(c *gin.Context) {
 	logger.Nssaiavailability.Infoln("Handle Patch /nssai-availability/:nfId")
-	var nssaiAvailabilityUpdateInfo plugin.PatchDocument
+	var nssaiAvailabilityUpdateInfo []models.PatchItem
 
 	requestBody, err := c.GetRawData()
 	if err != nil {

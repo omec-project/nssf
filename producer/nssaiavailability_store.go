@@ -21,7 +21,6 @@ import (
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/omec-project/nssf/factory"
 	"github.com/omec-project/nssf/logger"
-	"github.com/omec-project/nssf/plugin"
 	"github.com/omec-project/nssf/util"
 	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/openapi/v2/utils"
@@ -49,7 +48,7 @@ func NSSAIAvailabilityDeleteProcedure(nfId string) *models.ProblemDetails {
 }
 
 // NSSAIAvailability PATCH method
-func NSSAIAvailabilityPatchProcedure(nssaiAvailabilityUpdateInfo plugin.PatchDocument, nfId string) (
+func NSSAIAvailabilityPatchProcedure(nssaiAvailabilityUpdateInfo []models.PatchItem, nfId string) (
 	*models.AuthorizedNssaiAvailabilityInfo, *models.ProblemDetails,
 ) {
 	response := models.NewAuthorizedNssaiAvailabilityInfoWithDefaults()
