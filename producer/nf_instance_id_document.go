@@ -18,7 +18,6 @@ import (
 	"net/http"
 
 	"github.com/omec-project/nssf/logger"
-	"github.com/omec-project/nssf/plugin"
 	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/openapi/v2/utils"
 	"github.com/omec-project/util/httpwrapper"
@@ -44,7 +43,7 @@ func HandleNSSAIAvailabilityDelete(request *httpwrapper.Request) *httpwrapper.Re
 func HandleNSSAIAvailabilityPatch(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.Nssaiavailability.Infof("Handle NSSAIAvailabilityPatch")
 
-	nssaiAvailabilityUpdateInfo := request.Body.(plugin.PatchDocument)
+	nssaiAvailabilityUpdateInfo := request.Body.([]models.PatchItem)
 	nfID := request.Params["nfId"]
 
 	// TODO: Request NfProfile of NfId from NRF

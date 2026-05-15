@@ -16,14 +16,13 @@ import (
 
 	"github.com/omec-project/nssf/factory"
 	"github.com/omec-project/nssf/logger"
-	"github.com/omec-project/nssf/plugin"
 	"github.com/omec-project/nssf/util"
 	"github.com/omec-project/openapi/v2/models"
 )
 
 // Set Allowed NSSAI with Subscribed S-NSSAI(s) which are marked as default S-NSSAI(s)
 func useDefaultSubscribedSnssai(
-	param plugin.NsselectionQueryParameter, authorizedNetworkSliceInfo *models.AuthorizedNetworkSliceInfo,
+	param NsselectionQueryParameter, authorizedNetworkSliceInfo *models.AuthorizedNetworkSliceInfo,
 ) {
 	var mappingOfSnssai []models.MappingOfSnssai
 	if param.HomePlmnId != nil {
@@ -89,7 +88,7 @@ func useDefaultSubscribedSnssai(
 
 // Set Configured NSSAI with S-NSSAI(s) in Requested NSSAI which are marked as Default Configured NSSAI
 func useDefaultConfiguredNssai(
-	param plugin.NsselectionQueryParameter, authorizedNetworkSliceInfo *models.AuthorizedNetworkSliceInfo,
+	param NsselectionQueryParameter, authorizedNetworkSliceInfo *models.AuthorizedNetworkSliceInfo,
 ) {
 	for _, requestedSnssai := range param.SliceInfoRequestForRegistration.RequestedNssai {
 		// Check whether the Default Configured S-NSSAI is standard, which could be commonly decided by all roaming partners
@@ -114,7 +113,7 @@ func useDefaultConfiguredNssai(
 
 // Set Configured NSSAI with Subscribed S-NSSAI(s)
 func setConfiguredNssai(
-	param plugin.NsselectionQueryParameter, authorizedNetworkSliceInfo *models.AuthorizedNetworkSliceInfo,
+	param NsselectionQueryParameter, authorizedNetworkSliceInfo *models.AuthorizedNetworkSliceInfo,
 ) {
 	var mappingOfSnssai []models.MappingOfSnssai
 	if param.HomePlmnId != nil {
@@ -159,7 +158,7 @@ func setConfiguredNssai(
 
 // Network slice selection for registration
 // The function is executed when the IE, `slice-info-request-for-registration`, is provided in query parameters
-func nsselectionForRegistration(param plugin.NsselectionQueryParameter,
+func nsselectionForRegistration(param NsselectionQueryParameter,
 	authorizedNetworkSliceInfo *models.AuthorizedNetworkSliceInfo,
 	problemDetails *models.ProblemDetails,
 ) int {

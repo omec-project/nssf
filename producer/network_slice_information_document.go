@@ -23,7 +23,6 @@ import (
 
 	"github.com/omec-project/nssf/logger"
 	stats "github.com/omec-project/nssf/metrics"
-	"github.com/omec-project/nssf/plugin"
 	"github.com/omec-project/nssf/util"
 	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/openapi/v2/utils"
@@ -212,9 +211,9 @@ func parseExplodedTai(query url.Values, prefix string) *models.Tai {
 }
 
 // Parse NSSelectionGet query parameter
-func parseQueryParameter(query url.Values) (plugin.NsselectionQueryParameter, error) {
+func parseQueryParameter(query url.Values) (NsselectionQueryParameter, error) {
 	var (
-		param plugin.NsselectionQueryParameter
+		param NsselectionQueryParameter
 		err   error
 	)
 
