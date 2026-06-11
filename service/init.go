@@ -23,7 +23,7 @@ import (
 	"github.com/omec-project/nssf/nssaiavailability"
 	"github.com/omec-project/nssf/nsselection"
 	"github.com/omec-project/nssf/polling"
-	openapiLogger "github.com/omec-project/openapi/logger"
+	openapiLogger "github.com/omec-project/openapi/v2/logger"
 	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/util/http2_util"
 	utilLogger "github.com/omec-project/util/logger"

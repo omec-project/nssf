@@ -61,8 +61,6 @@ github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9G
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
-github.com/omec-project/openapi v1.7.2 h1:T7vpKFBHz2LKIr9bly9+9LQEK/10pQPwgWTj1Tzq5b4=
-github.com/omec-project/openapi v1.7.2/go.mod h1:pvJteSdf+iwttf4KKc0mCrDRexlW92fcKh6QfNdcnjA=
 github.com/omec-project/openapi/v2 v2.0.0 h1:aeNPvcJotm+paJLxxBrxJsoMsSWcnLeyr5z7C/CJ/JQ=
 github.com/omec-project/openapi/v2 v2.0.0/go.mod h1:dgqA/pmWLxUWeEl/lgecPmcDR4oolSzJK/ijbLwveow=
 github.com/omec-project/util v1.7.4 h1:NaDGdIg3BxmFFXT5LTXAfMdAWgDUkwcYP7Mts/4nxho=
