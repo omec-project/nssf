@@ -23,12 +23,11 @@ import (
 	"github.com/omec-project/nssf/nssaiavailability"
 	"github.com/omec-project/nssf/nsselection"
 	"github.com/omec-project/nssf/polling"
+	openapiLogger "github.com/omec-project/openapi/v2/logger"
 	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/util/http2_util"
 	utilLogger "github.com/omec-project/util/logger"
 	"github.com/urfave/cli/v3"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 type NSSF struct{}
@@ -83,26 +82,15 @@ func (nssf *NSSF) Initialize(c *cli.Command) error {
 }
 
 func (nssf *NSSF) setLogLevel() {
-	if factory.NssfConfig.Logger == nil {
+	cfgLogger := factory.NssfConfig.Logger
+	if cfgLogger == nil {
 		logger.InitLog.Warnln("NSSF config without log level setting")
 		return
 	}
 
-	if factory.NssfConfig.Logger.NSSF != nil {
-		if factory.NssfConfig.Logger.NSSF.DebugLevel != "" {
-			if level, err := zapcore.ParseLevel(factory.NssfConfig.Logger.NSSF.DebugLevel); err != nil {
-				logger.InitLog.Warnf("NSSF Log level [%s] is invalid, set to [info] level",
-					factory.NssfConfig.Logger.NSSF.DebugLevel)
-				logger.SetLogLevel(zap.InfoLevel)
-			} else {
-				logger.InitLog.Infof("NSSF Log level is set to [%s] level", level)
-				logger.SetLogLevel(level)
-			}
-		} else {
-			logger.InitLog.Infoln("NSSF Log level not set. Default set to [info] level")
-			logger.SetLogLevel(zap.InfoLevel)
-		}
-	}
+	utilLogger.ApplyLogSetting("NSSF", cfgLogger.NSSF, logger.InitLog, logger.SetLogLevel)
+	utilLogger.ApplyLogSetting("OpenApi", cfgLogger.OpenApi, openapiLogger.OpenapiLog, openapiLogger.SetLogLevel)
+	utilLogger.ApplyLogSetting("Util", cfgLogger.Util, utilLogger.UtilLog, utilLogger.SetLogLevel)
 }
 
 func (nssf *NSSF) Start() {
