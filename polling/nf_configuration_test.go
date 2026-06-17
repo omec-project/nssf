@@ -443,6 +443,12 @@ func TestFetchPlmnConfig(t *testing.T) {
 		t.Fail()
 	}
 
+	var expectedPlmnSnssai []nfConfigApi.PlmnSnssai
+	err = json.Unmarshal(validJson, &expectedPlmnSnssai)
+	if err != nil {
+		t.Fatalf("failed to unmarshal expectedPlmnSnssai: %v", err)
+	}
+
 	tests := []struct {
 		name           string
 		statusCode     int
@@ -457,7 +463,7 @@ func TestFetchPlmnConfig(t *testing.T) {
 			contentType:    "application/json",
 			responseBody:   string(validJson),
 			expectedError:  "",
-			expectedResult: validPlmnList,
+			expectedResult: expectedPlmnSnssai,
 		},
 		{
 			name:          "200 OK with invalid Content-Type",
