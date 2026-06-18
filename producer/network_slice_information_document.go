@@ -370,8 +370,8 @@ func NSSelectionGetProcedure(query url.Values) (*models.AuthorizedNetworkSliceIn
 		response       *models.AuthorizedNetworkSliceInfo
 		problemDetails *models.ProblemDetails
 	)
-	response = &models.AuthorizedNetworkSliceInfo{}
-	problemDetails = &models.ProblemDetails{}
+	response = models.NewAuthorizedNetworkSliceInfo()
+	problemDetails = models.NewProblemDetails()
 
 	// TODO: Record request times of the NF service consumer and response with ProblemDetails of 429 Too Many Requests
 	//       if the consumer has sent too many requests in a configured amount of time
@@ -389,39 +389,28 @@ func NSSelectionGetProcedure(query url.Values) (*models.AuthorizedNetworkSliceIn
 	// Check permission of NF service consumer
 	if param.NfType == nil {
 		problemDetail := "[Query Parameter] `nf-type` is required"
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetTitle(util.INVALID_REQUEST)
-		problemDetails.SetStatus(http.StatusBadRequest)
-		problemDetails.SetDetail(problemDetail)
 		invalidParams := []models.InvalidParam{{
 			Param:  "nf-type",
 			Reason: &problemDetail,
 		}}
-		problemDetails.SetInvalidParams(invalidParams)
+		problemDetails = utils.ProblemDetailsWithInvalidParams(util.INVALID_REQUEST, http.StatusBadRequest, problemDetail, invalidParams)
 		return nil, problemDetails
 	}
 
 	err = checkNfServiceConsumer(*param.NfType)
 	if err != nil {
 		// status = http.StatusForbidden
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetTitle(util.UNAUTHORIZED_CONSUMER)
-		problemDetails.SetStatus(http.StatusForbidden)
-		problemDetails.SetDetail(err.Error())
+		problemDetails = utils.ProblemDetails(util.UNAUTHORIZED_CONSUMER, http.StatusForbidden, err.Error())
 		return nil, problemDetails
 	}
 
 	if param.SliceInfoRequestForRegistration == nil && param.SliceInfoRequestForPduSession == nil {
 		problemDetail := "[Query Parameter] one of `slice-info-request-for-registration` or `slice-info-request-for-pdu-session` is required"
-		problemDetails = models.NewProblemDetails()
-		problemDetails.SetTitle(util.INVALID_REQUEST)
-		problemDetails.SetStatus(http.StatusBadRequest)
-		problemDetails.SetDetail(problemDetail)
 		invalidParams := []models.InvalidParam{
 			{Param: "slice-info-request-for-registration", Reason: &problemDetail},
 			{Param: "slice-info-request-for-pdu-session", Reason: &problemDetail},
 		}
-		problemDetails.SetInvalidParams(invalidParams)
+		problemDetails = utils.ProblemDetailsWithInvalidParams(util.INVALID_REQUEST, http.StatusBadRequest, problemDetail, invalidParams)
 		return nil, problemDetails
 	}
 
