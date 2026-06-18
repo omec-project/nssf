@@ -17,7 +17,9 @@ import (
 	"github.com/omec-project/nssf/factory"
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/nssf/util"
+	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/models"
+	"github.com/omec-project/openapi/v2/utils"
 )
 
 // Set Allowed NSSAI with Subscribed S-NSSAI(s) which are marked as default S-NSSAI(s)
@@ -148,7 +150,7 @@ func setConfiguredNssai(
 			configuredSnssai.ConfiguredSnssai = mappingOfSubscribedSnssai
 			if param.HomePlmnId != nil && !util.CheckStandardSnssai(subscribedSnssai.SubscribedSnssai) {
 				mappedHomeSnssai := subscribedSnssai.SubscribedSnssai
-				configuredSnssai.MappedHomeSnssai = &mappedHomeSnssai
+				configuredSnssai.SetMappedHomeSnssai(mappedHomeSnssai)
 			}
 
 			authorizedNetworkSliceInfo.ConfiguredNssai = append(authorizedNetworkSliceInfo.ConfiguredNssai, configuredSnssai)
@@ -191,16 +193,13 @@ func nsselectionForRegistration(param NsselectionQueryParameter,
 
 		if param.HomePlmnId == nil {
 			problemDetail := "[Query Parameter] `home-plmn-id` should be provided when requesting VPLMN specific mapped S-NSSAI values"
-			problemDetails.SetTitle(util.INVALID_REQUEST)
-			problemDetails.SetStatus(http.StatusBadRequest)
-			problemDetails.SetDetail(problemDetail)
 			invalidParams := []models.InvalidParam{
 				{
 					Param:  "home-plmn-id",
-					Reason: &problemDetail,
+					Reason: openapi.PtrString(problemDetail),
 				},
 			}
-			problemDetails.SetInvalidParams(invalidParams)
+			*problemDetails = *utils.ProblemDetailsWithInvalidParams(util.INVALID_REQUEST, http.StatusBadRequest, problemDetail, invalidParams)
 			status = http.StatusBadRequest
 			return status
 		}
@@ -292,10 +291,12 @@ func nsselectionForRegistration(param NsselectionQueryParameter,
 			// Return ProblemDetails indicating S-NSSAI is not supported
 			// TODO: Based on TS 23.501 V15.2.0, if the Requested NSSAI includes an S-NSSAI that is not valid in the
 			//       Serving PLMN, the NSSF may derive the Configured NSSAI for Serving PLMN
-			problemDetails.SetTitle(util.UNSUPPORTED_RESOURCE)
-			problemDetails.SetStatus(http.StatusForbidden)
-			problemDetails.SetDetail("S-NSSAI in Requested NSSAI is not supported in PLMN")
-			problemDetails.SetCause("SNSSAI_NOT_SUPPORTED")
+			*problemDetails = *utils.ProblemDetails(
+				util.UNSUPPORTED_RESOURCE,
+				http.StatusForbidden,
+				"S-NSSAI in Requested NSSAI is not supported in PLMN",
+			)
+			problemDetails.SetCause(utils.CauseSnssaiNotSupported)
 			status = http.StatusForbidden
 			return status
 		}

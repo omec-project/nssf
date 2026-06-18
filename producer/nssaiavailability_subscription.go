@@ -22,6 +22,7 @@ import (
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/nssf/util"
 	"github.com/omec-project/openapi/v2/models"
+	"github.com/omec-project/openapi/v2/utils"
 )
 
 // Get available subscription ID from configuration
@@ -58,10 +59,7 @@ func NSSAIAvailabilityPostProcedure(createData models.NssfEventSubscriptionCreat
 	tempID, err := getUnusedSubscriptionIDLocked()
 	if err != nil {
 		logger.Nssaiavailability.Warnln(err.Error())
-		problemDetails := models.NewProblemDetails()
-		problemDetails.SetTitle(util.UNSUPPORTED_RESOURCE)
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetDetail(err.Error())
+		problemDetails := utils.ProblemDetails(util.UNSUPPORTED_RESOURCE, http.StatusNotFound, err.Error())
 		return nil, problemDetails
 	}
 
@@ -95,9 +93,10 @@ func NSSAIAvailabilityUnsubscribeProcedure(subscriptionId string) *models.Proble
 	}
 
 	// No specific subscription ID exists
-	problemDetails = models.NewProblemDetails()
-	problemDetails.SetTitle(util.UNSUPPORTED_RESOURCE)
-	problemDetails.SetStatus(http.StatusNotFound)
-	problemDetails.SetDetail(fmt.Sprintf("Subscription ID '%s' is not available", subscriptionId))
+	problemDetails = utils.ProblemDetails(
+		util.UNSUPPORTED_RESOURCE,
+		http.StatusNotFound,
+		fmt.Sprintf("Subscription ID '%s' is not available", subscriptionId),
+	)
 	return problemDetails
 }

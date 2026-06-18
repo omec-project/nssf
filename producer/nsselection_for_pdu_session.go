@@ -17,7 +17,9 @@ import (
 	"net/http"
 
 	"github.com/omec-project/nssf/util"
+	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/models"
+	"github.com/omec-project/openapi/v2/utils"
 )
 
 func selectNsiInformation(nsiInformationList []models.NsiInformation) models.NsiInformation {
@@ -61,42 +63,40 @@ func nsselectionForPduSession(param NsselectionQueryParameter,
 		// Return ProblemDetails indicating S-NSSAI is not supported
 		// TODO: Based on TS 23.501 V15.2.0, if the Requested NSSAI includes an S-NSSAI that is not valid in the
 		//       Serving PLMN, the NSSF may derive the Configured NSSAI for Serving PLMN
-		problemDetails.SetTitle(util.UNSUPPORTED_RESOURCE)
-		problemDetails.SetStatus(http.StatusForbidden)
-		problemDetails.SetDetail("S-NSSAI in Requested NSSAI is not supported in PLMN")
-		problemDetails.SetCause("SNSSAI_NOT_SUPPORTED")
+		*problemDetails = *utils.ProblemDetails(
+			util.UNSUPPORTED_RESOURCE,
+			http.StatusForbidden,
+			"S-NSSAI in Requested NSSAI is not supported in PLMN",
+		)
+		problemDetails.SetCause(utils.CauseSnssaiNotSupported)
 		status = http.StatusForbidden
 		return status
 	}
 
-	problemDetails.SetTitle(util.INVALID_REQUEST)
-	problemDetails.SetStatus(http.StatusBadRequest)
 	if param.HomePlmnId != nil {
 		if param.SliceInfoRequestForPduSession.RoamingIndication == models.ROAMINGINDICATION_NON_ROAMING {
 			problemDetail := "`home-plmn-id` is provided, which contradicts `roamingIndication`:'NON_ROAMING'"
-			problemDetails.SetDetail(problemDetail)
 			invalidParams := []models.InvalidParam{
 				{
 					Param:  "home-plmn-id",
-					Reason: &problemDetail,
+					Reason: openapi.PtrString(problemDetail),
 				},
 			}
-			problemDetails.SetInvalidParams(invalidParams)
+			*problemDetails = *utils.ProblemDetailsWithInvalidParams(util.INVALID_REQUEST, http.StatusBadRequest, problemDetail, invalidParams)
 			status = http.StatusBadRequest
 			return status
 		}
 	} else {
 		if param.SliceInfoRequestForPduSession.RoamingIndication != models.ROAMINGINDICATION_NON_ROAMING {
 			problemDetail := fmt.Sprintf("`home-plmn-id` is not provided, which contradicts `roamingIndication`:'%s'",
-				string(param.SliceInfoRequestForPduSession.RoamingIndication))
-			problemDetails.SetDetail(problemDetail)
+				string(param.SliceInfoRequestForPduSession.GetRoamingIndication()))
 			invalidParams := []models.InvalidParam{
 				{
 					Param:  "home-plmn-id",
-					Reason: &problemDetail,
+					Reason: openapi.PtrString(problemDetail),
 				},
 			}
-			problemDetails.SetInvalidParams(invalidParams)
+			*problemDetails = *utils.ProblemDetailsWithInvalidParams(util.INVALID_REQUEST, http.StatusBadRequest, problemDetail, invalidParams)
 			status = http.StatusBadRequest
 			return status
 		}
@@ -112,11 +112,9 @@ func nsselectionForPduSession(param NsselectionQueryParameter,
 
 	nsiInformationList := util.GetNsiInformationListFromConfig(param.SliceInfoRequestForPduSession.SNssai)
 
-	if nsiInformationList == nil {
-		*authorizedNetworkSliceInfo = models.AuthorizedNetworkSliceInfo{}
-	} else {
+	if nsiInformationList != nil {
 		nsiInformation := selectNsiInformation(nsiInformationList)
-		authorizedNetworkSliceInfo.NsiInformation = &nsiInformation
+		authorizedNetworkSliceInfo.SetNsiInformation(nsiInformation)
 	}
 
 	return http.StatusOK

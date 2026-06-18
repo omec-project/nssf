@@ -40,10 +40,11 @@ func NSSAIAvailabilityDeleteProcedure(nfId string) *models.ProblemDetails {
 		}
 	}
 
-	problemDetails = models.NewProblemDetails()
-	problemDetails.SetTitle(util.UNSUPPORTED_RESOURCE)
-	problemDetails.SetStatus(http.StatusNotFound)
-	problemDetails.SetDetail(fmt.Sprintf("AMF ID '%s' does not exist", nfId))
+	problemDetails = utils.ProblemDetails(
+		util.UNSUPPORTED_RESOURCE,
+		http.StatusNotFound,
+		fmt.Sprintf("AMF ID '%s' does not exist", nfId),
+	)
 	return problemDetails
 }
 
@@ -52,8 +53,6 @@ func NSSAIAvailabilityPatchProcedure(nssaiAvailabilityUpdateInfo []models.PatchI
 	*models.AuthorizedNssaiAvailabilityInfo, *models.ProblemDetails,
 ) {
 	response := models.NewAuthorizedNssaiAvailabilityInfoWithDefaults()
-	problemDetails := models.NewProblemDetails()
-
 	var amfIdx int
 	var original []byte
 	hitAmf := false
@@ -98,9 +97,11 @@ func NSSAIAvailabilityPatchProcedure(nssaiAvailabilityUpdateInfo []models.PatchI
 	}
 	factory.ConfigLock.RUnlock()
 	if !hitAmf {
-		problemDetails.SetTitle(util.UNSUPPORTED_RESOURCE)
-		problemDetails.SetStatus(http.StatusNotFound)
-		problemDetails.SetDetail(fmt.Sprintf("AMF ID '%s' does not exist", nfId))
+		problemDetails := utils.ProblemDetails(
+			util.UNSUPPORTED_RESOURCE,
+			http.StatusNotFound,
+			fmt.Sprintf("AMF ID '%s' does not exist", nfId),
+		)
 		return nil, problemDetails
 	}
 
@@ -123,15 +124,13 @@ func NSSAIAvailabilityPatchProcedure(nssaiAvailabilityUpdateInfo []models.PatchI
 
 	patch, err := jsonpatch.DecodePatch(patchJSON)
 	if err != nil {
-		problemDetails = utils.ProblemDetailsMalformedRequestSyntax(err.Error())
+		problemDetails := utils.ProblemDetailsMalformedRequestSyntax(err.Error())
 		return nil, problemDetails
 	}
 
 	modified, err := patch.Apply(original)
 	if err != nil {
-		problemDetails.SetTitle(util.INVALID_REQUEST)
-		problemDetails.SetStatus(http.StatusConflict)
-		problemDetails.SetDetail(err.Error())
+		problemDetails := utils.ProblemDetails(util.INVALID_REQUEST, http.StatusConflict, err.Error())
 		return nil, problemDetails
 	}
 
@@ -139,9 +138,7 @@ func NSSAIAvailabilityPatchProcedure(nssaiAvailabilityUpdateInfo []models.PatchI
 	err = json.Unmarshal(modified, &factory.NssfConfig.Configuration.AmfList[amfIdx].SupportedNssaiAvailabilityData)
 	factory.ConfigLock.Unlock()
 	if err != nil {
-		problemDetails.SetTitle(util.INVALID_REQUEST)
-		problemDetails.SetStatus(http.StatusBadRequest)
-		problemDetails.SetDetail(err.Error())
+		problemDetails := utils.ProblemDetails(util.INVALID_REQUEST, http.StatusBadRequest, err.Error())
 		return nil, problemDetails
 	}
 
@@ -164,11 +161,12 @@ func NSSAIAvailabilityPutProcedure(nssaiAvailabilityInfo models.NssaiAvailabilit
 
 	for _, s := range nssaiAvailabilityInfo.SupportedNssaiAvailabilityData {
 		if !util.CheckSupportedNssaiInPlmn(s.SupportedSnssaiList, s.Tai.PlmnId) {
-			problemDetails := models.NewProblemDetails()
-			problemDetails.SetTitle(util.UNSUPPORTED_RESOURCE)
-			problemDetails.SetStatus(http.StatusForbidden)
-			problemDetails.SetDetail("S-NSSAI in Requested NSSAI is not supported in PLMN")
-			problemDetails.SetCause("SNSSAI_NOT_SUPPORTED")
+			problemDetails := utils.ProblemDetails(
+				util.UNSUPPORTED_RESOURCE,
+				http.StatusForbidden,
+				"S-NSSAI in Requested NSSAI is not supported in PLMN",
+			)
+			problemDetails.SetCause(utils.CauseSnssaiNotSupported)
 			return nil, problemDetails
 		}
 	}
