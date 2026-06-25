@@ -17,7 +17,6 @@ import (
 	"net/http"
 
 	"github.com/omec-project/nssf/util"
-	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/openapi/v2/utils"
 )
@@ -41,7 +40,8 @@ func nsselectionForPduSession(param NsselectionQueryParameter,
 	if param.HomePlmnId != nil {
 		// Check whether UE's Home PLMN is supported when UE is a roamer
 		if !util.CheckSupportedHplmn(*param.HomePlmnId) {
-			authorizedNetworkSliceInfo.RejectedNssaiInPlmn = append(authorizedNetworkSliceInfo.RejectedNssaiInPlmn, param.SliceInfoRequestForPduSession.SNssai)
+			rejectedNssaiInPlmn := append(authorizedNetworkSliceInfo.GetRejectedNssaiInPlmn(), param.SliceInfoRequestForPduSession.GetSNssai())
+			authorizedNetworkSliceInfo.SetRejectedNssaiInPlmn(rejectedNssaiInPlmn)
 
 			status = http.StatusOK
 			return status
@@ -51,7 +51,8 @@ func nsselectionForPduSession(param NsselectionQueryParameter,
 	if param.Tai != nil {
 		// Check whether UE's current TA is supported when UE provides TAI
 		if !util.CheckSupportedTa(*param.Tai) {
-			authorizedNetworkSliceInfo.RejectedNssaiInTa = append(authorizedNetworkSliceInfo.RejectedNssaiInTa, param.SliceInfoRequestForPduSession.SNssai)
+			rejectedNssaiInTa := append(authorizedNetworkSliceInfo.GetRejectedNssaiInTa(), param.SliceInfoRequestForPduSession.GetSNssai())
+			authorizedNetworkSliceInfo.SetRejectedNssaiInTa(rejectedNssaiInTa)
 
 			status = http.StatusOK
 			return status
@@ -59,7 +60,7 @@ func nsselectionForPduSession(param NsselectionQueryParameter,
 	}
 
 	if param.Tai != nil &&
-		!util.CheckSupportedSnssaiInPlmn(param.SliceInfoRequestForPduSession.SNssai, param.Tai.PlmnId) {
+		!util.CheckSupportedSnssaiInPlmn(param.SliceInfoRequestForPduSession.GetSNssai(), param.Tai.GetPlmnId()) {
 		// Return ProblemDetails indicating S-NSSAI is not supported
 		// TODO: Based on TS 23.501 V15.2.0, if the Requested NSSAI includes an S-NSSAI that is not valid in the
 		//       Serving PLMN, the NSSF may derive the Configured NSSAI for Serving PLMN
@@ -74,43 +75,38 @@ func nsselectionForPduSession(param NsselectionQueryParameter,
 	}
 
 	if param.HomePlmnId != nil {
-		if param.SliceInfoRequestForPduSession.RoamingIndication == models.ROAMINGINDICATION_NON_ROAMING {
+		if param.SliceInfoRequestForPduSession.GetRoamingIndication() == models.ROAMINGINDICATION_NON_ROAMING {
 			problemDetail := "`home-plmn-id` is provided, which contradicts `roamingIndication`:'NON_ROAMING'"
-			invalidParams := []models.InvalidParam{
-				{
-					Param:  "home-plmn-id",
-					Reason: openapi.PtrString(problemDetail),
-				},
-			}
+			invalidParam := models.NewInvalidParam("home-plmn-id")
+			invalidParam.SetReason(problemDetail)
+			invalidParams := []models.InvalidParam{*invalidParam}
 			*problemDetails = *utils.ProblemDetailsWithInvalidParams(util.INVALID_REQUEST, http.StatusBadRequest, problemDetail, invalidParams)
 			status = http.StatusBadRequest
 			return status
 		}
 	} else {
-		if param.SliceInfoRequestForPduSession.RoamingIndication != models.ROAMINGINDICATION_NON_ROAMING {
+		if param.SliceInfoRequestForPduSession.GetRoamingIndication() != models.ROAMINGINDICATION_NON_ROAMING {
 			problemDetail := fmt.Sprintf("`home-plmn-id` is not provided, which contradicts `roamingIndication`:'%s'",
 				string(param.SliceInfoRequestForPduSession.GetRoamingIndication()))
-			invalidParams := []models.InvalidParam{
-				{
-					Param:  "home-plmn-id",
-					Reason: openapi.PtrString(problemDetail),
-				},
-			}
+			invalidParam := models.NewInvalidParam("home-plmn-id")
+			invalidParam.SetReason(problemDetail)
+			invalidParams := []models.InvalidParam{*invalidParam}
 			*problemDetails = *utils.ProblemDetailsWithInvalidParams(util.INVALID_REQUEST, http.StatusBadRequest, problemDetail, invalidParams)
 			status = http.StatusBadRequest
 			return status
 		}
 	}
 
-	if param.Tai != nil && !util.CheckSupportedSnssaiInTa(param.SliceInfoRequestForPduSession.SNssai, *param.Tai) {
+	if param.Tai != nil && !util.CheckSupportedSnssaiInTa(param.SliceInfoRequestForPduSession.GetSNssai(), *param.Tai) {
 		// Requested S-NSSAI does not supported in UE's current TA
 		// Add it to Rejected NSSAI in TA
-		authorizedNetworkSliceInfo.RejectedNssaiInTa = append(authorizedNetworkSliceInfo.RejectedNssaiInTa, param.SliceInfoRequestForPduSession.SNssai)
+		rejectedNssaiInTa := append(authorizedNetworkSliceInfo.GetRejectedNssaiInTa(), param.SliceInfoRequestForPduSession.GetSNssai())
+		authorizedNetworkSliceInfo.SetRejectedNssaiInTa(rejectedNssaiInTa)
 		status = http.StatusOK
 		return status
 	}
 
-	nsiInformationList := util.GetNsiInformationListFromConfig(param.SliceInfoRequestForPduSession.SNssai)
+	nsiInformationList := util.GetNsiInformationListFromConfig(param.SliceInfoRequestForPduSession.GetSNssai())
 
 	if nsiInformationList != nil {
 		nsiInformation := selectNsiInformation(nsiInformationList)

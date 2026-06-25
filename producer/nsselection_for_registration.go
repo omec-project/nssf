@@ -17,7 +17,6 @@ import (
 	"github.com/omec-project/nssf/factory"
 	"github.com/omec-project/nssf/logger"
 	"github.com/omec-project/nssf/util"
-	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/openapi/v2/utils"
 )
@@ -37,25 +36,25 @@ func useDefaultSubscribedSnssai(
 		}
 	}
 
-	for _, subscribedSnssai := range param.SliceInfoRequestForRegistration.SubscribedNssai {
+	for _, subscribedSnssai := range param.SliceInfoRequestForRegistration.GetSubscribedNssai() {
 		if subscribedSnssai.GetDefaultIndication() {
 			// Subscribed S-NSSAI is marked as default S-NSSAI
 
 			var mappingOfSubscribedSnssai models.Snssai
 			// TODO: Compared with Restricted S-NSSAI list in configuration under roaming scenario
-			if param.HomePlmnId != nil && !util.CheckStandardSnssai(subscribedSnssai.SubscribedSnssai) {
-				targetMapping, found := util.FindMappingWithHomeSnssai(subscribedSnssai.SubscribedSnssai, mappingOfSnssai)
+			if param.HomePlmnId != nil && !util.CheckStandardSnssai(subscribedSnssai.GetSubscribedSnssai()) {
+				targetMapping, found := util.FindMappingWithHomeSnssai(subscribedSnssai.GetSubscribedSnssai(), mappingOfSnssai)
 
 				if !found {
 					logger.Nsselection.Warnf("no mapping of Subscribed S-NSSAI %+v in PLMN %+v in NSSF configuration",
-						subscribedSnssai.SubscribedSnssai,
+						subscribedSnssai.GetSubscribedSnssai(),
 						*param.HomePlmnId)
 					continue
 				} else {
-					mappingOfSubscribedSnssai = targetMapping.ServingSnssai
+					mappingOfSubscribedSnssai = targetMapping.GetServingSnssai()
 				}
 			} else {
-				mappingOfSubscribedSnssai = subscribedSnssai.SubscribedSnssai
+				mappingOfSubscribedSnssai = subscribedSnssai.GetSubscribedSnssai()
 			}
 
 			if param.Tai != nil && !util.CheckSupportedSnssaiInTa(mappingOfSubscribedSnssai, *param.Tai) {
@@ -63,16 +62,15 @@ func useDefaultSubscribedSnssai(
 			}
 
 			var allowedSnssaiElement models.AllowedSnssai
-			allowedSnssaiElement.AllowedSnssai = mappingOfSubscribedSnssai
+			allowedSnssaiElement.SetAllowedSnssai(mappingOfSubscribedSnssai)
 			nsiInformationList := util.GetNsiInformationListFromConfig(mappingOfSubscribedSnssai)
 			if nsiInformationList != nil {
 				// TODO: `NsiInformationList` should be slice in `AllowedSnssai` instead of pointer of slice
 				allowedSnssaiElement.NsiInformationList = append(allowedSnssaiElement.NsiInformationList,
 					nsiInformationList...)
 			}
-			if param.HomePlmnId != nil && !util.CheckStandardSnssai(subscribedSnssai.SubscribedSnssai) {
-				mappedHomeSnssai := subscribedSnssai.SubscribedSnssai
-				allowedSnssaiElement.MappedHomeSnssai = &mappedHomeSnssai
+			if param.HomePlmnId != nil && !util.CheckStandardSnssai(subscribedSnssai.GetSubscribedSnssai()) {
+				allowedSnssaiElement.SetMappedHomeSnssai(subscribedSnssai.GetSubscribedSnssai())
 			}
 
 			// Default Access Type is set to 3GPP Access if no TAI is provided
@@ -92,7 +90,7 @@ func useDefaultSubscribedSnssai(
 func useDefaultConfiguredNssai(
 	param NsselectionQueryParameter, authorizedNetworkSliceInfo *models.AuthorizedNetworkSliceInfo,
 ) {
-	for _, requestedSnssai := range param.SliceInfoRequestForRegistration.RequestedNssai {
+	for _, requestedSnssai := range param.SliceInfoRequestForRegistration.GetRequestedNssai() {
 		// Check whether the Default Configured S-NSSAI is standard, which could be commonly decided by all roaming partners
 		if !util.CheckStandardSnssai(requestedSnssai) {
 			logger.Nsselection.Infof("s-nssai %+v in Requested NSSAI which based on Default Configured NSSAI is not standard",
@@ -101,12 +99,12 @@ func useDefaultConfiguredNssai(
 		}
 
 		// Check whether the Default Configured S-NSSAI is subscribed
-		for _, subscribedSnssai := range param.SliceInfoRequestForRegistration.SubscribedNssai {
-			if factory.SnssaiToKey(requestedSnssai) == factory.SnssaiToKey(subscribedSnssai.SubscribedSnssai) {
-				var configuredSnssai models.ConfiguredSnssai
-				configuredSnssai.ConfiguredSnssai = requestedSnssai
+		for _, subscribedSnssai := range param.SliceInfoRequestForRegistration.GetSubscribedNssai() {
+			if factory.SnssaiToKey(requestedSnssai) == factory.SnssaiToKey(subscribedSnssai.GetSubscribedSnssai()) {
+				configuredSnssai := models.NewConfiguredSnssaiWithDefaults()
+				configuredSnssai.SetConfiguredSnssai(requestedSnssai)
 
-				authorizedNetworkSliceInfo.ConfiguredNssai = append(authorizedNetworkSliceInfo.ConfiguredNssai, configuredSnssai)
+				authorizedNetworkSliceInfo.SetConfiguredNssai(append(authorizedNetworkSliceInfo.GetConfiguredNssai(), *configuredSnssai))
 				break
 			}
 		}
@@ -128,32 +126,31 @@ func setConfiguredNssai(
 		}
 	}
 
-	for _, subscribedSnssai := range param.SliceInfoRequestForRegistration.SubscribedNssai {
+	for _, subscribedSnssai := range param.SliceInfoRequestForRegistration.GetSubscribedNssai() {
 		var mappingOfSubscribedSnssai models.Snssai
-		if param.HomePlmnId != nil && !util.CheckStandardSnssai(subscribedSnssai.SubscribedSnssai) {
-			targetMapping, found := util.FindMappingWithHomeSnssai(subscribedSnssai.SubscribedSnssai, mappingOfSnssai)
+		if param.HomePlmnId != nil && !util.CheckStandardSnssai(subscribedSnssai.GetSubscribedSnssai()) {
+			targetMapping, found := util.FindMappingWithHomeSnssai(subscribedSnssai.GetSubscribedSnssai(), mappingOfSnssai)
 
 			if !found {
 				logger.Nsselection.Warnf("no mapping of Subscribed S-NSSAI %+v in PLMN %+v in NSSF configuration",
-					subscribedSnssai.SubscribedSnssai,
+					subscribedSnssai.GetSubscribedSnssai(),
 					*param.HomePlmnId)
 				continue
 			} else {
-				mappingOfSubscribedSnssai = targetMapping.ServingSnssai
+				mappingOfSubscribedSnssai = targetMapping.GetServingSnssai()
 			}
 		} else {
-			mappingOfSubscribedSnssai = subscribedSnssai.SubscribedSnssai
+			mappingOfSubscribedSnssai = subscribedSnssai.GetSubscribedSnssai()
 		}
 
-		if util.CheckSupportedSnssaiInPlmn(mappingOfSubscribedSnssai, param.Tai.PlmnId) {
-			var configuredSnssai models.ConfiguredSnssai
-			configuredSnssai.ConfiguredSnssai = mappingOfSubscribedSnssai
-			if param.HomePlmnId != nil && !util.CheckStandardSnssai(subscribedSnssai.SubscribedSnssai) {
-				mappedHomeSnssai := subscribedSnssai.SubscribedSnssai
-				configuredSnssai.SetMappedHomeSnssai(mappedHomeSnssai)
+		if util.CheckSupportedSnssaiInPlmn(mappingOfSubscribedSnssai, param.Tai.GetPlmnId()) {
+			configuredSnssai := models.NewConfiguredSnssaiWithDefaults()
+			configuredSnssai.SetConfiguredSnssai(mappingOfSubscribedSnssai)
+			if param.HomePlmnId != nil && !util.CheckStandardSnssai(subscribedSnssai.GetSubscribedSnssai()) {
+				configuredSnssai.SetMappedHomeSnssai(subscribedSnssai.GetSubscribedSnssai())
 			}
 
-			authorizedNetworkSliceInfo.ConfiguredNssai = append(authorizedNetworkSliceInfo.ConfiguredNssai, configuredSnssai)
+			authorizedNetworkSliceInfo.SetConfiguredNssai(append(authorizedNetworkSliceInfo.GetConfiguredNssai(), *configuredSnssai))
 		}
 	}
 }
@@ -168,7 +165,8 @@ func nsselectionForRegistration(param NsselectionQueryParameter,
 	if param.HomePlmnId != nil {
 		// Check whether UE's Home PLMN is supported when UE is a roamer
 		if !util.CheckSupportedHplmn(*param.HomePlmnId) {
-			authorizedNetworkSliceInfo.RejectedNssaiInPlmn = append(authorizedNetworkSliceInfo.RejectedNssaiInPlmn, param.SliceInfoRequestForRegistration.RequestedNssai...)
+			rejectedNssaiInPlmn := append(authorizedNetworkSliceInfo.GetRejectedNssaiInPlmn(), param.SliceInfoRequestForRegistration.GetRequestedNssai()...)
+			authorizedNetworkSliceInfo.SetRejectedNssaiInPlmn(rejectedNssaiInPlmn)
 
 			status = http.StatusOK
 			return status
@@ -178,7 +176,8 @@ func nsselectionForRegistration(param NsselectionQueryParameter,
 	if param.Tai != nil {
 		// Check whether UE's current TA is supported when UE provides TAI
 		if !util.CheckSupportedTa(*param.Tai) {
-			authorizedNetworkSliceInfo.RejectedNssaiInTa = append(authorizedNetworkSliceInfo.RejectedNssaiInTa, param.SliceInfoRequestForRegistration.RequestedNssai...)
+			rejectedNssaiInTa := append(authorizedNetworkSliceInfo.GetRejectedNssaiInTa(), param.SliceInfoRequestForRegistration.GetRequestedNssai()...)
+			authorizedNetworkSliceInfo.SetRejectedNssaiInTa(rejectedNssaiInTa)
 
 			status = http.StatusOK
 			return status
@@ -193,12 +192,9 @@ func nsselectionForRegistration(param NsselectionQueryParameter,
 
 		if param.HomePlmnId == nil {
 			problemDetail := "[Query Parameter] `home-plmn-id` should be provided when requesting VPLMN specific mapped S-NSSAI values"
-			invalidParams := []models.InvalidParam{
-				{
-					Param:  "home-plmn-id",
-					Reason: openapi.PtrString(problemDetail),
-				},
-			}
+			invalidParam := models.NewInvalidParam("home-plmn-id")
+			invalidParam.SetReason(problemDetail)
+			invalidParams := []models.InvalidParam{*invalidParam}
 			*problemDetails = *utils.ProblemDetailsWithInvalidParams(util.INVALID_REQUEST, http.StatusBadRequest, problemDetail, invalidParams)
 			status = http.StatusBadRequest
 			return status
@@ -208,23 +204,23 @@ func nsselectionForRegistration(param NsselectionQueryParameter,
 
 		if mappingOfSnssai != nil {
 			// Find mappings for S-NSSAIs in `subscribedSnssai`
-			for _, subscribedSnssai := range param.SliceInfoRequestForRegistration.SubscribedNssai {
-				if util.CheckStandardSnssai(subscribedSnssai.SubscribedSnssai) {
+			for _, subscribedSnssai := range param.SliceInfoRequestForRegistration.GetSubscribedNssai() {
+				if util.CheckStandardSnssai(subscribedSnssai.GetSubscribedSnssai()) {
 					continue
 				}
 
-				targetMapping, found := util.FindMappingWithHomeSnssai(subscribedSnssai.SubscribedSnssai, mappingOfSnssai)
+				targetMapping, found := util.FindMappingWithHomeSnssai(subscribedSnssai.GetSubscribedSnssai(), mappingOfSnssai)
 
 				if !found {
 					logger.Nsselection.Warnf("no mapping of Subscribed S-NSSAI %+v in PLMN %+v in NSSF configuration",
-						subscribedSnssai.SubscribedSnssai,
+						subscribedSnssai.GetSubscribedSnssai(),
 						*param.HomePlmnId)
 					continue
 				} else {
 					// Add mappings to Allowed NSSAI list
 					var allowedSnssaiElement models.AllowedSnssai
-					allowedSnssaiElement.AllowedSnssai = targetMapping.ServingSnssai
-					mappedHomeSnssai := subscribedSnssai.SubscribedSnssai
+					allowedSnssaiElement.AllowedSnssai = targetMapping.GetServingSnssai()
+					mappedHomeSnssai := subscribedSnssai.GetSubscribedSnssai()
 					allowedSnssaiElement.MappedHomeSnssai = &mappedHomeSnssai
 
 					// Default Access Type is set to 3GPP Access if no TAI is provided
@@ -240,7 +236,7 @@ func nsselectionForRegistration(param NsselectionQueryParameter,
 			}
 
 			// Find mappings for S-NSSAIs in `sNssaiForMapping`
-			for _, snssai := range param.SliceInfoRequestForRegistration.SNssaiForMapping {
+			for _, snssai := range param.SliceInfoRequestForRegistration.GetSNssaiForMapping() {
 				if util.CheckStandardSnssai(snssai) {
 					continue
 				}
@@ -255,7 +251,7 @@ func nsselectionForRegistration(param NsselectionQueryParameter,
 				} else {
 					// Add mappings to Allowed NSSAI list
 					var allowedSnssaiElement models.AllowedSnssai
-					allowedSnssaiElement.AllowedSnssai = targetMapping.ServingSnssai
+					allowedSnssaiElement.AllowedSnssai = targetMapping.GetServingSnssai()
 					snssaiCopy := snssai
 					allowedSnssaiElement.MappedHomeSnssai = &snssaiCopy
 
@@ -282,12 +278,12 @@ func nsselectionForRegistration(param NsselectionQueryParameter,
 	}
 
 	checkInvalidRequestedNssai := false
-	if len(param.SliceInfoRequestForRegistration.RequestedNssai) != 0 {
+	if len(param.SliceInfoRequestForRegistration.GetRequestedNssai()) != 0 {
 		// Requested NSSAI is provided
 		// Verify which S-NSSAI(s) in the Requested NSSAI are permitted based on comparing the Subscribed S-NSSAI(s)
 
 		if param.Tai != nil &&
-			!util.CheckSupportedNssaiInPlmn(param.SliceInfoRequestForRegistration.RequestedNssai, param.Tai.PlmnId) {
+			!util.CheckSupportedNssaiInPlmn(param.SliceInfoRequestForRegistration.GetRequestedNssai(), param.Tai.GetPlmnId()) {
 			// Return ProblemDetails indicating S-NSSAI is not supported
 			// TODO: Based on TS 23.501 V15.2.0, if the Requested NSSAI includes an S-NSSAI that is not valid in the
 			//       Serving PLMN, the NSSF may derive the Configured NSSAI for Serving PLMN
@@ -304,11 +300,12 @@ func nsselectionForRegistration(param NsselectionQueryParameter,
 		// Check if any Requested S-NSSAIs is present in Subscribed S-NSSAIs
 		checkIfRequestAllowed := false
 
-		for _, requestedSnssai := range param.SliceInfoRequestForRegistration.RequestedNssai {
+		for _, requestedSnssai := range param.SliceInfoRequestForRegistration.GetRequestedNssai() {
 			if param.Tai != nil && !util.CheckSupportedSnssaiInTa(requestedSnssai, *param.Tai) {
 				// Requested S-NSSAI does not supported in UE's current TA
 				// Add it to Rejected NSSAI in TA
-				authorizedNetworkSliceInfo.RejectedNssaiInTa = append(authorizedNetworkSliceInfo.RejectedNssaiInTa, requestedSnssai)
+				rejectedNssaiInTa := append(authorizedNetworkSliceInfo.GetRejectedNssaiInTa(), requestedSnssai)
+				authorizedNetworkSliceInfo.SetRejectedNssaiInTa(rejectedNssaiInTa)
 				continue
 			}
 
@@ -318,27 +315,28 @@ func nsselectionForRegistration(param NsselectionQueryParameter,
 				// Standard S-NSSAIs are supported to be commonly decided by all roaming partners
 				// Only non-standard S-NSSAIs are required to find mappings
 				targetMapping, found := util.FindMappingWithServingSnssai(requestedSnssai,
-					param.SliceInfoRequestForRegistration.MappingOfNssai)
+					param.SliceInfoRequestForRegistration.GetMappingOfNssai())
 
 				if !found {
 					// No mapping of Requested S-NSSAI to HPLMN S-NSSAI is provided by UE
 					// TODO: Search for local configuration if there is no provided mapping from UE, and update UE's
 					//       Configured NSSAI
 					checkInvalidRequestedNssai = true
-					authorizedNetworkSliceInfo.RejectedNssaiInPlmn = append(authorizedNetworkSliceInfo.RejectedNssaiInPlmn, requestedSnssai)
+					rejectedNssaiInPlmn := append(authorizedNetworkSliceInfo.GetRejectedNssaiInPlmn(), requestedSnssai)
+					authorizedNetworkSliceInfo.SetRejectedNssaiInPlmn(rejectedNssaiInPlmn)
 					continue
 				} else {
 					// TODO: Check if mappings of S-NSSAIs are correct
 					//       If not, update UE's Configured NSSAI
-					mappingOfRequestedSnssai = targetMapping.HomeSnssai
+					mappingOfRequestedSnssai = targetMapping.GetHomeSnssai()
 				}
 			} else {
 				mappingOfRequestedSnssai = requestedSnssai
 			}
 
 			hitSubscription := false
-			for _, subscribedSnssai := range param.SliceInfoRequestForRegistration.SubscribedNssai {
-				if factory.SnssaiToKey(mappingOfRequestedSnssai) == factory.SnssaiToKey(subscribedSnssai.SubscribedSnssai) {
+			for _, subscribedSnssai := range param.SliceInfoRequestForRegistration.GetSubscribedNssai() {
+				if factory.SnssaiToKey(mappingOfRequestedSnssai) == factory.SnssaiToKey(subscribedSnssai.GetSubscribedSnssai()) {
 					// Requested S-NSSAI matches one of Subscribed S-NSSAI
 					// Add it to Allowed NSSAI list
 					hitSubscription = true
@@ -352,7 +350,7 @@ func nsselectionForRegistration(param NsselectionQueryParameter,
 							nsiInformationList...)
 					}
 					if param.HomePlmnId != nil && !util.CheckStandardSnssai(requestedSnssai) {
-						mappedHomeSnssai := subscribedSnssai.SubscribedSnssai
+						mappedHomeSnssai := subscribedSnssai.GetSubscribedSnssai()
 						allowedSnssaiElement.MappedHomeSnssai = &mappedHomeSnssai
 					}
 
@@ -375,7 +373,8 @@ func nsselectionForRegistration(param NsselectionQueryParameter,
 				// Requested S-NSSAI does not match any Subscribed S-NSSAI
 				// Add it to Rejected NSSAI in PLMN
 				checkInvalidRequestedNssai = true
-				authorizedNetworkSliceInfo.RejectedNssaiInPlmn = append(authorizedNetworkSliceInfo.RejectedNssaiInPlmn, requestedSnssai)
+				rejectedNssaiInPlmn := append(authorizedNetworkSliceInfo.GetRejectedNssaiInPlmn(), requestedSnssai)
+				authorizedNetworkSliceInfo.SetRejectedNssaiInPlmn(rejectedNssaiInPlmn)
 			}
 		}
 

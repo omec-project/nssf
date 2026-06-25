@@ -16,7 +16,6 @@ import (
 	"math"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/omec-project/nssf/factory"
 	"github.com/omec-project/nssf/logger"
@@ -68,12 +67,12 @@ func NSSAIAvailabilityPostProcedure(createData models.NssfEventSubscriptionCreat
 
 	factory.NssfConfig.Subscriptions = append(factory.NssfConfig.Subscriptions, subscription)
 
-	response.SubscriptionId = subscription.SubscriptionId
-	if !subscription.SubscriptionData.Expiry.IsZero() {
-		response.Expiry = new(time.Time)
-		*response.Expiry = *subscription.SubscriptionData.Expiry
+	response.SetSubscriptionId(subscription.SubscriptionId)
+	timeExpiry := subscription.SubscriptionData.GetExpiry()
+	if !timeExpiry.IsZero() {
+		response.SetExpiry(timeExpiry)
 	}
-	response.AuthorizedNssaiAvailabilityData = util.AuthorizeOfTaListFromConfig(subscription.SubscriptionData.TaiList)
+	response.SetAuthorizedNssaiAvailabilityData(util.AuthorizeOfTaListFromConfig(subscription.SubscriptionData.GetTaiList()))
 
 	return response, nil
 }

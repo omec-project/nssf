@@ -14,16 +14,13 @@ import (
 
 func TestParseQueryParameterSupportsExplodedRegistrationRequest(t *testing.T) {
 	expectedSliceInfo := models.NewSliceInfoForRegistration()
-	expectedSliceInfo.SubscribedNssai = []models.SubscribedSnssai{{
-		SubscribedSnssai:  models.Snssai{Sst: 1, Sd: openapi.PtrString("010203")},
-		DefaultIndication: openapi.PtrBool(true),
-	}}
-	expectedSliceInfo.RequestedNssai = []models.Snssai{{Sst: 1, Sd: openapi.PtrString("112233")}}
-	expectedSliceInfo.MappingOfNssai = []models.MappingOfSnssai{{
-		ServingSnssai: models.Snssai{Sst: 1, Sd: openapi.PtrString("112233")},
-		HomeSnssai:    models.Snssai{Sst: 2, Sd: openapi.PtrString("445566")},
-	}}
-	expectedSliceInfo.RequestMapping = openapi.PtrBool(true)
+	subscribedSnssai := models.NewSubscribedSnssai(models.Snssai{Sst: 1, Sd: openapi.PtrString("010203")})
+	subscribedSnssai.SetDefaultIndication(true)
+	expectedSliceInfo.SetSubscribedNssai([]models.SubscribedSnssai{*subscribedSnssai})
+	expectedSliceInfo.SetRequestedNssai([]models.Snssai{{Sst: 1, Sd: openapi.PtrString("112233")}})
+	mappingOfSnssai := models.NewMappingOfSnssai(models.Snssai{Sst: 1, Sd: openapi.PtrString("112233")}, models.Snssai{Sst: 2, Sd: openapi.PtrString("445566")})
+	expectedSliceInfo.SetMappingOfNssai([]models.MappingOfSnssai{*mappingOfSnssai})
+	expectedSliceInfo.SetRequestMapping(true)
 
 	expectedHomePlmnID := models.NewPlmnId("001", "01")
 	expectedTai := models.NewTai(*expectedHomePlmnID, "000001")
@@ -59,5 +56,56 @@ func TestParseQueryParameterSupportsExplodedRegistrationRequest(t *testing.T) {
 	}
 	if !reflect.DeepEqual(param.Tai, expectedTai) {
 		t.Fatalf("unexpected tai: %+v", param.Tai)
+	}
+}
+
+func TestParseExplodedMappingOfSnssaiListPreservesIndexes(t *testing.T) {
+	query := url.Values{
+		"mappingOfNssai[servingSnssai][sst]": {"", "1"},
+		"mappingOfNssai[homeSnssai][sst]":    {"2", "3"},
+	}
+
+	mappingOfNssai, err := parseExplodedMappingOfSnssaiList(query, "mappingOfNssai")
+	if err != nil {
+		t.Fatalf("parseExplodedMappingOfSnssaiList returned error: %v", err)
+	}
+
+	expected := []models.MappingOfSnssai{
+		{
+			HomeSnssai: models.Snssai{Sst: 2},
+		},
+		{
+			ServingSnssai: models.Snssai{Sst: 1},
+			HomeSnssai:    models.Snssai{Sst: 3},
+		},
+	}
+
+	if !reflect.DeepEqual(mappingOfNssai, expected) {
+		t.Fatalf("unexpected mappingOfNssai: %+v", mappingOfNssai)
+	}
+}
+
+func TestParseExplodedSnssaiListRejectsSdWithoutSst(t *testing.T) {
+	query := url.Values{
+		"requestedNssai[sd]": {"010203"},
+	}
+
+	_, err := parseExplodedSnssaiList(query, "requestedNssai")
+	if err == nil {
+		t.Fatal("expected error for sd without sst")
+	}
+}
+
+func TestParseExplodedSnssaiRejectsSdWithoutSst(t *testing.T) {
+	query := url.Values{
+		"sNssai[sd]": {"010203"},
+	}
+
+	_, found, err := parseExplodedSnssai(query, "sNssai")
+	if err == nil {
+		t.Fatal("expected error for sd without sst")
+	}
+	if found {
+		t.Fatal("expected snssai not to be marked found on invalid input")
 	}
 }

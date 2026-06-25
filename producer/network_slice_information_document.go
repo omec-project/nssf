@@ -38,24 +38,33 @@ func hasExplodedQueryParam(query url.Values, prefix string) bool {
 	return false
 }
 
-func parseExplodedSnssai(query url.Values, prefix string) (models.Snssai, bool, error) {
+func parseSnssaiValues(sst, sd string) (models.Snssai, bool, error) {
 	var snssai models.Snssai
-	var found bool
 
-	if sst := query.Get(prefix + "[sst]"); sst != "" {
-		sstValue, err := strconv.ParseInt(sst, 10, 32)
-		if err != nil {
-			return snssai, false, err
+	if sst == "" {
+		if sd != "" {
+			return snssai, false, fmt.Errorf("missing sst for snssai")
 		}
-		snssai.SetSst(int32(sstValue))
-		found = true
-	}
-	if sd := query.Get(prefix + "[sd]"); sd != "" {
-		snssai.SetSd(sd)
-		found = true
+		return snssai, false, nil
 	}
 
-	return snssai, found, nil
+	sstValue, err := strconv.ParseInt(sst, 10, 32)
+	if err != nil {
+		return snssai, false, err
+	}
+	snssai.SetSst(int32(sstValue))
+
+	if sd != "" {
+		snssai.SetSd(sd)
+	}
+
+	return snssai, true, nil
+}
+
+func parseExplodedSnssai(query url.Values, prefix string) (models.Snssai, bool, error) {
+	sst := query.Get(prefix + "[sst]")
+	sd := query.Get(prefix + "[sd]")
+	return parseSnssaiValues(sst, sd)
 }
 
 func parseExplodedBool(query url.Values, key string) (*bool, error) {
@@ -71,36 +80,60 @@ func parseExplodedBool(query url.Values, key string) (*bool, error) {
 }
 
 func parseExplodedSnssaiList(query url.Values, prefix string) ([]models.Snssai, error) {
-	sstValues := query[prefix+"[sst]"]
-	sdValues := query[prefix+"[sd]"]
-	count := max(len(sstValues), len(sdValues))
-	if count == 0 {
+	indexedItems, present, err := parseExplodedSnssaiEntries(query, prefix)
+	if err != nil {
+		return nil, err
+	}
+	if len(indexedItems) == 0 {
 		return nil, nil
 	}
 
-	items := make([]models.Snssai, 0, count)
-	for i := range count {
-		var item models.Snssai
-		var found bool
-
-		if i < len(sstValues) && sstValues[i] != "" {
-			sstValue, err := strconv.ParseInt(sstValues[i], 10, 32)
-			if err != nil {
-				return nil, err
-			}
-			item.SetSst(int32(sstValue))
-			found = true
-		}
-		if i < len(sdValues) && sdValues[i] != "" {
-			item.SetSd(sdValues[i])
-			found = true
-		}
-		if found {
-			items = append(items, item)
+	items := make([]models.Snssai, 0, len(indexedItems))
+	for i := range indexedItems {
+		if present[i] {
+			items = append(items, indexedItems[i])
 		}
 	}
 
 	return items, nil
+}
+
+func parseExplodedSnssaiEntries(query url.Values, prefix string) ([]models.Snssai, []bool, error) {
+	sstValues := query[prefix+"[sst]"]
+	sdValues := query[prefix+"[sd]"]
+	count := max(len(sstValues), len(sdValues))
+	if count == 0 {
+		return nil, nil, nil
+	}
+
+	items := make([]models.Snssai, count)
+	present := make([]bool, count)
+	for i := range count {
+		var sst string
+		if i < len(sstValues) {
+			sst = sstValues[i]
+		}
+		var sd string
+		if i < len(sdValues) {
+			sd = sdValues[i]
+		}
+
+		item, found, err := parseSnssaiValues(sst, sd)
+		if err != nil {
+			if sst == "" && sd != "" {
+				return nil, nil, fmt.Errorf("missing sst for snssai at index %d", i)
+			}
+			return nil, nil, err
+		}
+		if !found {
+			continue
+		}
+
+		items[i] = item
+		present[i] = true
+	}
+
+	return items, present, nil
 }
 
 func parseExplodedSubscribedSnssaiList(query url.Values, prefix string) ([]models.SubscribedSnssai, error) {
@@ -148,11 +181,11 @@ func parseExplodedSubscribedSnssaiList(query url.Values, prefix string) ([]model
 }
 
 func parseExplodedMappingOfSnssaiList(query url.Values, prefix string) ([]models.MappingOfSnssai, error) {
-	servingSnssai, err := parseExplodedSnssaiList(query, prefix+"[servingSnssai]")
+	servingSnssai, servingPresent, err := parseExplodedSnssaiEntries(query, prefix+"[servingSnssai]")
 	if err != nil {
 		return nil, err
 	}
-	homeSnssai, err := parseExplodedSnssaiList(query, prefix+"[homeSnssai]")
+	homeSnssai, homePresent, err := parseExplodedSnssaiEntries(query, prefix+"[homeSnssai]")
 	if err != nil {
 		return nil, err
 	}
@@ -166,12 +199,12 @@ func parseExplodedMappingOfSnssaiList(query url.Values, prefix string) ([]models
 		var item models.MappingOfSnssai
 		var found bool
 
-		if i < len(servingSnssai) {
-			item.ServingSnssai = servingSnssai[i]
+		if i < len(servingPresent) && servingPresent[i] {
+			item.SetServingSnssai(servingSnssai[i])
 			found = true
 		}
-		if i < len(homeSnssai) {
-			item.HomeSnssai = homeSnssai[i]
+		if i < len(homePresent) && homePresent[i] {
+			item.SetHomeSnssai(homeSnssai[i])
 			found = true
 		}
 		if found {
@@ -236,47 +269,47 @@ func parseQueryParameter(query url.Values) (NsselectionQueryParameter, error) {
 		if subscribedNssai, parseErr := parseExplodedSubscribedSnssaiList(query, "slice-info-request-for-registration[subscribedNssai]"); parseErr != nil {
 			return param, parseErr
 		} else if len(subscribedNssai) != 0 {
-			param.SliceInfoRequestForRegistration.SubscribedNssai = subscribedNssai
+			param.SliceInfoRequestForRegistration.SetSubscribedNssai(subscribedNssai)
 		}
 		if sNssaiForMapping, parseErr := parseExplodedSnssaiList(query, "slice-info-request-for-registration[sNssaiForMapping]"); parseErr != nil {
 			return param, parseErr
 		} else if len(sNssaiForMapping) != 0 {
-			param.SliceInfoRequestForRegistration.SNssaiForMapping = sNssaiForMapping
+			param.SliceInfoRequestForRegistration.SetSNssaiForMapping(sNssaiForMapping)
 		}
 		if requestedNssai, parseErr := parseExplodedSnssaiList(query, "slice-info-request-for-registration[requestedNssai]"); parseErr != nil {
 			return param, parseErr
 		} else if len(requestedNssai) != 0 {
-			param.SliceInfoRequestForRegistration.RequestedNssai = requestedNssai
+			param.SliceInfoRequestForRegistration.SetRequestedNssai(requestedNssai)
 		}
 		if mappingOfNssai, parseErr := parseExplodedMappingOfSnssaiList(query, "slice-info-request-for-registration[mappingOfNssai]"); parseErr != nil {
 			return param, parseErr
 		} else if len(mappingOfNssai) != 0 {
-			param.SliceInfoRequestForRegistration.MappingOfNssai = mappingOfNssai
+			param.SliceInfoRequestForRegistration.SetMappingOfNssai(mappingOfNssai)
 		}
 		if defaultConfiguredSnssaiInd, parseErr := parseExplodedBool(query, "slice-info-request-for-registration[defaultConfiguredSnssaiInd]"); parseErr != nil {
 			return param, parseErr
 		} else if defaultConfiguredSnssaiInd != nil {
-			param.SliceInfoRequestForRegistration.DefaultConfiguredSnssaiInd = defaultConfiguredSnssaiInd
+			param.SliceInfoRequestForRegistration.SetDefaultConfiguredSnssaiInd(*defaultConfiguredSnssaiInd)
 		}
 		if requestMapping, parseErr := parseExplodedBool(query, "slice-info-request-for-registration[requestMapping]"); parseErr != nil {
 			return param, parseErr
 		} else if requestMapping != nil {
-			param.SliceInfoRequestForRegistration.RequestMapping = requestMapping
+			param.SliceInfoRequestForRegistration.SetRequestMapping(*requestMapping)
 		}
 		if ueSupNssrgInd, parseErr := parseExplodedBool(query, "slice-info-request-for-registration[ueSupNssrgInd]"); parseErr != nil {
 			return param, parseErr
 		} else if ueSupNssrgInd != nil {
-			param.SliceInfoRequestForRegistration.UeSupNssrgInd = ueSupNssrgInd
+			param.SliceInfoRequestForRegistration.SetUeSupNssrgInd(*ueSupNssrgInd)
 		}
 		if suppressNssrgInd, parseErr := parseExplodedBool(query, "slice-info-request-for-registration[suppressNssrgInd]"); parseErr != nil {
 			return param, parseErr
 		} else if suppressNssrgInd != nil {
-			param.SliceInfoRequestForRegistration.SuppressNssrgInd = suppressNssrgInd
+			param.SliceInfoRequestForRegistration.SetSuppressNssrgInd(*suppressNssrgInd)
 		}
 		if nsagSupported, parseErr := parseExplodedBool(query, "slice-info-request-for-registration[nsagSupported]"); parseErr != nil {
 			return param, parseErr
 		} else if nsagSupported != nil {
-			param.SliceInfoRequestForRegistration.NsagSupported = nsagSupported
+			param.SliceInfoRequestForRegistration.SetNsagSupported(*nsagSupported)
 		}
 	}
 
@@ -292,15 +325,15 @@ func parseQueryParameter(query url.Values) (NsselectionQueryParameter, error) {
 		if snssai, found, parseErr := parseExplodedSnssai(query, "slice-info-request-for-pdu-session[sNssai]"); parseErr != nil {
 			return param, parseErr
 		} else if found {
-			param.SliceInfoRequestForPduSession.SNssai = snssai
+			param.SliceInfoRequestForPduSession.SetSNssai(snssai)
 		}
 		if roamingIndication := query.Get("slice-info-request-for-pdu-session[roamingIndication]"); roamingIndication != "" {
-			param.SliceInfoRequestForPduSession.RoamingIndication = models.RoamingIndication(roamingIndication)
+			param.SliceInfoRequestForPduSession.SetRoamingIndication(models.RoamingIndication(roamingIndication))
 		}
 		if homeSnssai, found, parseErr := parseExplodedSnssai(query, "slice-info-request-for-pdu-session[homeSnssai]"); parseErr != nil {
 			return param, parseErr
 		} else if found {
-			param.SliceInfoRequestForPduSession.HomeSnssai = &homeSnssai
+			param.SliceInfoRequestForPduSession.SetHomeSnssai(homeSnssai)
 		}
 	}
 
