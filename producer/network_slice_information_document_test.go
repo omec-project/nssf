@@ -6,6 +6,7 @@ package producer
 import (
 	"net/url"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/omec-project/openapi/v2"
@@ -94,6 +95,9 @@ func TestParseExplodedSnssaiListRejectsSdWithoutSst(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for sd without sst")
 	}
+	if !strings.Contains(err.Error(), "requestedNssai") {
+		t.Fatalf("expected error to include parameter name, got %q", err)
+	}
 }
 
 func TestParseExplodedSnssaiRejectsSdWithoutSst(t *testing.T) {
@@ -107,5 +111,8 @@ func TestParseExplodedSnssaiRejectsSdWithoutSst(t *testing.T) {
 	}
 	if found {
 		t.Fatal("expected snssai not to be marked found on invalid input")
+	}
+	if !strings.Contains(err.Error(), "sNssai") {
+		t.Fatalf("expected error to include parameter name, got %q", err)
 	}
 }

@@ -64,7 +64,11 @@ func parseSnssaiValues(sst, sd string) (models.Snssai, bool, error) {
 func parseExplodedSnssai(query url.Values, prefix string) (models.Snssai, bool, error) {
 	sst := query.Get(prefix + "[sst]")
 	sd := query.Get(prefix + "[sd]")
-	return parseSnssaiValues(sst, sd)
+	snssai, found, err := parseSnssaiValues(sst, sd)
+	if err != nil && sst == "" && sd != "" {
+		return snssai, false, fmt.Errorf("missing sst for %s", prefix)
+	}
+	return snssai, found, err
 }
 
 func parseExplodedBool(query url.Values, key string) (*bool, error) {
@@ -121,7 +125,7 @@ func parseExplodedSnssaiEntries(query url.Values, prefix string) ([]models.Snssa
 		item, found, err := parseSnssaiValues(sst, sd)
 		if err != nil {
 			if sst == "" && sd != "" {
-				return nil, nil, fmt.Errorf("missing sst for snssai at index %d", i)
+				return nil, nil, fmt.Errorf("missing sst for %s at index %d", prefix, i)
 			}
 			return nil, nil, err
 		}
