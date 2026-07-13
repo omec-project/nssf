@@ -402,13 +402,9 @@ func HandleNSSelectionGet(request *httpwrapper.Request) *httpwrapper.Response {
 }
 
 func NSSelectionGetProcedure(query url.Values) (*models.AuthorizedNetworkSliceInfo, *models.ProblemDetails) {
-	var (
-		status         int
-		response       *models.AuthorizedNetworkSliceInfo
-		problemDetails *models.ProblemDetails
-	)
-	response = models.NewAuthorizedNetworkSliceInfo()
-	problemDetails = models.NewProblemDetails()
+	var status int
+	response := models.NewAuthorizedNetworkSliceInfo()
+	problemDetails := models.NewProblemDetails()
 
 	// TODO: Record request times of the NF service consumer and response with ProblemDetails of 429 Too Many Requests
 	//       if the consumer has sent too many requests in a configured amount of time
