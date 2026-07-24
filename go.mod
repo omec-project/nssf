@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/omec-project/openapi/v2 v2.1.5
 	github.com/omec-project/util v1.8.1
-	github.com/prometheus/client_golang v1.23.2
+	github.com/prometheus/client_golang v1.24.0
 	github.com/urfave/cli/v3 v3.10.1
 	go.uber.org/zap v1.28.0
 	go.yaml.in/yaml/v4 v4.0.0-rc.6
