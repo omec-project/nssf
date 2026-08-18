@@ -2,11 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-
 info:
   version: 1.0.0
   description: NSSF initial local test configuration
-
 configuration:
   nssfName: NSSF
   sbi:
@@ -301,40 +299,40 @@ configuration:
             sst: 1
             sd: 3
 subscriptions:
-    - subscriptionId: "1"
-      subscriptionData:
-        nfNssaiAvailabilityUri: "http://amf1.aether.org:29518/namf-nssaiavailability/v1/nssai-availability/notify"
-        taiList:
-          - plmnId:
-              mcc: "466"
-              mnc: "92"
-            tac: "33456"
-          - plmnId:
-              mcc: "466"
-              mnc: "92"
-            tac: "33457"
-        event: "SNSSAI_STATUS_CHANGE_REPORT"
-    - subscriptionId: "3"
-      subscriptionData:
-        nfNssaiAvailabilityUri: "http://amf3.aether.org:29518/namf-nssaiavailability/v1/nssai-availability/notify"
-        taiList:
-          - plmnId:
-              mcc: "466"
-              mnc: "92"
-            tac: "33457"
-          - plmnId:
-              mcc: "466"
-              mnc: "92"
-            tac: "33458"
-        event: "SNSSAI_STATUS_CHANGE_REPORT"
-        expiry: "2020-06-24T16:35:31+08:00"
-    - subscriptionId: "4"
-      subscriptionData:
-        nfNssaiAvailabilityUri: "http://amf4.aether.org:29518/namf-nssaiavailability/v1/nssai-availability/notify"
-        taiList:
-          - plmnId:
-              mcc: "466"
-              mnc: "92"
-            tac: "33459"
-        event: "SNSSAI_STATUS_CHANGE_REPORT"
-        expiry: "2020-06-25T16:35:31+08:00"
+  - subscriptionId: "1"
+    subscriptionData:
+      nfNssaiAvailabilityUri: "http://amf1.aether.org:29518/namf-nssaiavailability/v1/nssai-availability/notify"
+      taiList:
+        - plmnId:
+            mcc: "466"
+            mnc: "92"
+          tac: "33456"
+        - plmnId:
+            mcc: "466"
+            mnc: "92"
+          tac: "33457"
+      event: "SNSSAI_STATUS_CHANGE_REPORT"
+  - subscriptionId: "3"
+    subscriptionData:
+      nfNssaiAvailabilityUri: "http://amf3.aether.org:29518/namf-nssaiavailability/v1/nssai-availability/notify"
+      taiList:
+        - plmnId:
+            mcc: "466"
+            mnc: "92"
+          tac: "33457"
+        - plmnId:
+            mcc: "466"
+            mnc: "92"
+          tac: "33458"
+      event: "SNSSAI_STATUS_CHANGE_REPORT"
+      expiry: "2020-06-24T16:35:31+08:00"
+  - subscriptionId: "4"
+    subscriptionData:
+      nfNssaiAvailabilityUri: "http://amf4.aether.org:29518/namf-nssaiavailability/v1/nssai-availability/notify"
+      taiList:
+        - plmnId:
+            mcc: "466"
+            mnc: "92"
+          tac: "33459"
+      event: "SNSSAI_STATUS_CHANGE_REPORT"
+      expiry: "2020-06-25T16:35:31+08:00"
