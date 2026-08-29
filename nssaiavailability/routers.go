@@ -133,23 +133,24 @@ func wrapRouteHandler(handler gin.HandlerFunc, aliases []routeParamAlias) gin.Ha
 }
 
 func getRoutes() []Route {
+	const nssaiAvailabilityNfIdPattern = "/nssai-availability/:nfId"
 	return []Route{
 		{
 			"NSSAIAvailabilityDelete",
 			http.MethodDelete,
-			"/nssai-availability/:nfId",
+			nssaiAvailabilityNfIdPattern,
 			HTTPNSSAIAvailabilityDelete,
 		},
 		{
 			"NSSAIAvailabilityPatch",
 			http.MethodPatch,
-			"/nssai-availability/:nfId",
+			nssaiAvailabilityNfIdPattern,
 			HTTPNSSAIAvailabilityPatch,
 		},
 		{
 			"NSSAIAvailabilityPut",
 			http.MethodPut,
-			"/nssai-availability/:nfId",
+			nssaiAvailabilityNfIdPattern,
 			HTTPNSSAIAvailabilityPut,
 		},
 		{

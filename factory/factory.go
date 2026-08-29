@@ -20,6 +20,8 @@ import (
 	"go.yaml.in/yaml/v4"
 )
 
+const DefaultWebuiUri = "http://webui:5001"
+
 var (
 	NssfConfig Config
 	Configured bool
@@ -43,7 +45,7 @@ func InitConfigFactory(f string) error {
 	}
 
 	if NssfConfig.Configuration.WebuiUri == "" {
-		NssfConfig.Configuration.WebuiUri = "http://webui:5001"
+		NssfConfig.Configuration.WebuiUri = DefaultWebuiUri
 		logger.CfgLog.Infof("webuiUri not set in configuration file. Using %v", NssfConfig.Configuration.WebuiUri)
 		return nil
 	}

@@ -10,27 +10,29 @@ import (
 	"github.com/omec-project/openapi/v2/models"
 )
 
+const testNfId = "test-id"
+
 func TestBuildNFProfile_EmptyContext(t *testing.T) {
-	ctx := context.NSSFContext{NfId: "test-id"}
+	ctx := context.NSSFContext{NfId: testNfId}
 
 	profile, err := getNfProfile(&ctx, []models.PlmnId{})
 	if err != nil {
-		t.Errorf("Error building NFProfile: %v\n", err)
+		t.Errorf("Error building NFProfile: %v", err)
 	}
 
-	if profile.NfInstanceId != "test-id" ||
-		profile.NfType != models.NFTYPE_NSSF ||
-		profile.NfStatus != models.NFSTATUS_REGISTERED ||
-		len(profile.PlmnList) != 0 ||
-		profile.Ipv4Addresses[0] != ctx.RegisterIPv4 ||
-		profile.NfServices != nil {
-		t.Errorf("Unexpected NfProfile built: %v\n", profile)
+	if profile.GetNfInstanceId() != testNfId ||
+		profile.GetNfType() != models.NFTYPE_NSSF ||
+		profile.GetNfStatus() != models.NFSTATUS_REGISTERED ||
+		len(profile.GetPlmnList()) != 0 ||
+		profile.GetIpv4Addresses()[0] != ctx.RegisterIPv4 ||
+		profile.GetNfServices() != nil {
+		t.Errorf("Unexpected NfProfile built: %v", profile)
 	}
 }
 
 func TestBuildNFProfile_InitializedContext(t *testing.T) {
 	ctx := context.NSSFContext{
-		NfId:         "test-id",
+		NfId:         testNfId,
 		RegisterIPv4: "127.0.0.42",
 		NfService: map[models.ServiceName]models.NFService{models.SERVICENAME_NNSSF_NSSELECTION: {
 			ServiceInstanceId: "instance-id",
@@ -40,16 +42,16 @@ func TestBuildNFProfile_InitializedContext(t *testing.T) {
 
 	profile, err := getNfProfile(&ctx, []models.PlmnId{{Mcc: "200", Mnc: "99"}})
 	if err != nil {
-		t.Errorf("Error building NFProfile: %v\n", err)
+		t.Errorf("Error building NFProfile: %v", err)
 	}
 
-	if profile.NfInstanceId != "test-id" ||
-		profile.NfType != models.NFTYPE_NSSF ||
-		profile.NfStatus != models.NFSTATUS_REGISTERED ||
-		(profile.PlmnList)[0].Mcc != "200" ||
-		(profile.PlmnList)[0].Mnc != "99" ||
-		profile.Ipv4Addresses[0] != ctx.RegisterIPv4 ||
-		(profile.NfServices)[0].ServiceName != "service-name" {
-		t.Errorf("Unexpected NfProfile built: %v\n", profile)
+	if profile.GetNfInstanceId() != testNfId ||
+		profile.GetNfType() != models.NFTYPE_NSSF ||
+		profile.GetNfStatus() != models.NFSTATUS_REGISTERED ||
+		(profile.GetPlmnList())[0].GetMcc() != "200" ||
+		(profile.GetPlmnList())[0].GetMnc() != "99" ||
+		profile.GetIpv4Addresses()[0] != ctx.RegisterIPv4 ||
+		(profile.GetNfServices())[0].GetServiceName() != "service-name" {
+		t.Errorf("Unexpected NfProfile built: %v", profile)
 	}
 }
