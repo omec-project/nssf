@@ -43,7 +43,7 @@ func TestWebuiUrl(t *testing.T) {
 		{
 			name:       "default webui URL",
 			configFile: "../test/conf/test_nssf_config.yaml",
-			want:       DefaultWebuiUri,
+			want:       defaultWebuiUri,
 		},
 		{
 			name:       "custom webui URL",
@@ -83,7 +83,7 @@ func TestValidateWebuiUri(t *testing.T) {
 		},
 		{
 			name:    "valid http URI with port",
-			uri:     DefaultWebuiUri,
+			uri:     defaultWebuiUri,
 			isValid: true,
 		},
 		{
