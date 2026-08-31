@@ -48,10 +48,10 @@ func TestBuildNFProfile_InitializedContext(t *testing.T) {
 	if profile.GetNfInstanceId() != testNfId ||
 		profile.GetNfType() != models.NFTYPE_NSSF ||
 		profile.GetNfStatus() != models.NFSTATUS_REGISTERED ||
-		(profile.GetPlmnList())[0].GetMcc() != "200" ||
-		(profile.GetPlmnList())[0].GetMnc() != "99" ||
+		profile.GetPlmnList()[0].GetMcc() != "200" ||
+		profile.GetPlmnList()[0].GetMnc() != "99" ||
 		profile.GetIpv4Addresses()[0] != ctx.RegisterIPv4 ||
-		(profile.GetNfServices())[0].GetServiceName() != "service-name" {
+		profile.GetNfServices()[0].GetServiceName() != "service-name" {
 		t.Errorf("Unexpected NfProfile built: %v", profile)
 	}
 }
