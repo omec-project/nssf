@@ -9,7 +9,7 @@ require (
 	github.com/omec-project/openapi/v2 v2.2.3
 	github.com/omec-project/util v1.8.7
 	github.com/prometheus/client_golang v1.24.1
-	github.com/urfave/cli/v3 v3.11.0
+	github.com/urfave/cli/v3 v3.12.0
 	go.uber.org/zap v1.28.0
 	go.yaml.in/yaml/v4 v4.0.0-rc.6
 )
