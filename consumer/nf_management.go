@@ -4,17 +4,10 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-/*
- * NSSF Consumer
- *
- * Network Function Management
- */
-
 package consumer
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -25,11 +18,21 @@ import (
 	"github.com/omec-project/openapi/v2/models"
 )
 
-func getNfProfile(currentNssfContext *nssfContext.NSSFContext, plmnConfig []models.PlmnId) (profile *models.NFProfile, err error) {
-	if currentNssfContext == nil {
-		return &models.NFProfile{}, fmt.Errorf("nssf context has not been initialized. NF profile cannot be built")
+const errServerNoResponse = "no response from server"
+
+func closeNFManagementResponseBody(res *http.Response, operation string) {
+	if res == nil || res.Body == nil {
+		return
 	}
-	profile = models.NewNFProfileWithDefaults()
+	if bodyCloseErr := res.Body.Close(); bodyCloseErr != nil {
+		logger.ConsumerLog.Errorf("%s response body cannot close: %+v", operation, bodyCloseErr)
+	}
+}
+
+func getNfProfile(currentNssfContext *nssfContext.NSSFContext, plmnConfig []models.PlmnId) (profile models.NFProfile, err error) {
+	if currentNssfContext == nil {
+		return profile, openapi.ReportError("nssf context has not been initialized. NF profile cannot be built")
+	}
 	profile.SetNfInstanceId(currentNssfContext.NfId)
 	profile.SetNfType(models.NFTYPE_NSSF)
 	profile.SetNfStatus(models.NFSTATUS_REGISTERED)
@@ -39,45 +42,44 @@ func getNfProfile(currentNssfContext *nssfContext.NSSFContext, plmnConfig []mode
 		profile.SetPlmnList(plmnCopy)
 	}
 	profile.SetIpv4Addresses([]string{currentNssfContext.RegisterIPv4})
-	var services []models.NFService
+	services := map[string]models.NFService{}
+	serviceList := []models.NFService{}
 	for _, nfService := range currentNssfContext.NfService {
-		services = append(services, nfService)
+		services[nfService.GetServiceInstanceId()] = nfService
+		serviceList = append(serviceList, nfService)
 	}
 	if len(services) > 0 {
-		profile.SetNfServices(services)
+		profile.SetNfServices(serviceList)
+		profile.SetNfServiceList(services)
 	}
 	return profile, err
 }
 
 var SendRegisterNFInstance = func(plmnConfig []models.PlmnId) (prof *models.NFProfile, resourceNrfUri string, err error) {
-	nssfSelf := nssfContext.NSSF_Self()
-	nfProfile, err := getNfProfile(nssfSelf, plmnConfig)
+	self := nssfContext.NSSF_Self()
+	nfProfile, err := getNfProfile(self, plmnConfig)
 	if err != nil {
-		return &models.NFProfile{}, "", err
+		return models.NewNFProfileWithDefaults(), "", err
 	}
+
 	configuration := Nnrf_NFManagement.NewConfiguration()
 	serverConfig := &configuration.Servers[0]
 	if apiRootVar, exists := serverConfig.Variables["apiRoot"]; exists {
-		apiRootVar.DefaultValue = nssfSelf.NrfUri
+		apiRootVar.DefaultValue = self.NrfUri
 		serverConfig.Variables["apiRoot"] = apiRootVar
 	}
-	apiClient := Nnrf_NFManagement.NewAPIClient(configuration)
+	client := Nnrf_NFManagement.NewAPIClient(configuration)
+	apiRegisterNFInstanceRequest := client.NFInstanceIDDocumentAPI.RegisterNFInstance(context.TODO(), nfProfile.GetNfInstanceId())
+	apiRegisterNFInstanceRequest = apiRegisterNFInstanceRequest.NFProfile(nfProfile)
+	receivedNfProfile, res, err := client.NFInstanceIDDocumentAPI.RegisterNFInstanceExecute(apiRegisterNFInstanceRequest)
+	defer closeNFManagementResponseBody(res, "RegisterNFInstance")
+	logger.ConsumerLog.Debugf("registering NF Instance using profile: %+v", nfProfile)
 
-	apiRegisterNFInstanceRequest := apiClient.NFInstanceIDDocumentAPI.RegisterNFInstance(context.TODO(), nfProfile.NfInstanceId)
-	apiRegisterNFInstanceRequest = apiRegisterNFInstanceRequest.NFProfile(*nfProfile)
-	receivedNfProfile, res, err := apiClient.NFInstanceIDDocumentAPI.RegisterNFInstanceExecute(apiRegisterNFInstanceRequest)
 	if err != nil {
-		return &models.NFProfile{}, "", err
+		return models.NewNFProfileWithDefaults(), "", err
 	}
 	if res == nil {
-		return &models.NFProfile{}, "", fmt.Errorf("no response from server")
-	}
-	if res.Body != nil {
-		defer func() {
-			if bodyCloseErr := res.Body.Close(); bodyCloseErr != nil {
-				logger.AppLog.Errorf("RegisterNFInstance response body cannot close: %+v", bodyCloseErr)
-			}
-		}()
+		return models.NewNFProfileWithDefaults(), "", openapi.ReportError(errServerNoResponse)
 	}
 
 	switch res.StatusCode {
@@ -88,82 +90,74 @@ var SendRegisterNFInstance = func(plmnConfig []models.PlmnId) (prof *models.NFPr
 		resourceUri := res.Header.Get("Location")
 		resourceNrfUri = resourceUri[:strings.Index(resourceUri, "/nnrf-nfm/")]
 		retrieveNfInstanceId := resourceUri[strings.LastIndex(resourceUri, "/")+1:]
-		nssfSelf.NfId = retrieveNfInstanceId
+		self.NfId = retrieveNfInstanceId
 		logger.ConsumerLog.Debugln("NSSF NF profile registered to the NRF")
 		return receivedNfProfile, resourceNrfUri, nil
 	default:
-		return receivedNfProfile, "", fmt.Errorf("unexpected status code returned by the NRF %d", res.StatusCode)
+		return receivedNfProfile, "", openapi.ReportError("NRF returned unexpected status code %d", res.StatusCode)
 	}
 }
 
-var SendUpdateNFInstance = func(patchItem []models.PatchItem) (*models.NFProfile, *models.ProblemDetails, error) {
-	logger.ConsumerLog.Debugln("send Update NFInstance")
+var SendDeregisterNFInstance = func() error {
+	logger.ConsumerLog.Infoln("send Deregister NFInstance")
 
-	nssfSelf := nssfContext.NSSF_Self()
+	self := nssfContext.NSSF_Self()
+	// Set client and set url
 	configuration := Nnrf_NFManagement.NewConfiguration()
 	serverConfig := &configuration.Servers[0]
 	if apiRootVar, exists := serverConfig.Variables["apiRoot"]; exists {
-		apiRootVar.DefaultValue = nssfSelf.NrfUri
+		apiRootVar.DefaultValue = self.NrfUri
+		serverConfig.Variables["apiRoot"] = apiRootVar
+	}
+	client := Nnrf_NFManagement.NewAPIClient(configuration)
+	apiDeregisterNFInstanceRequest := client.NFInstanceIDDocumentAPI.DeregisterNFInstance(context.Background(), self.NfId)
+	res, err := client.NFInstanceIDDocumentAPI.DeregisterNFInstanceExecute(apiDeregisterNFInstanceRequest)
+	defer closeNFManagementResponseBody(res, "DeregisterNFInstance")
+	if err != nil {
+		return err
+	}
+	if res == nil {
+		return openapi.ReportError(errServerNoResponse)
+	}
+	if res.StatusCode == http.StatusNoContent {
+		return nil
+	}
+	return openapi.ReportError("unexpected response code")
+}
+
+var SendUpdateNFInstance = func(patchItem []models.PatchItem) (receivedNfProfile *models.NFProfile, problemDetails *models.ProblemDetails, err error) {
+	logger.ConsumerLog.Debugln("send Update NFInstance")
+
+	self := nssfContext.NSSF_Self()
+	configuration := Nnrf_NFManagement.NewConfiguration()
+	serverConfig := &configuration.Servers[0]
+	if apiRootVar, exists := serverConfig.Variables["apiRoot"]; exists {
+		apiRootVar.DefaultValue = self.NrfUri
 		serverConfig.Variables["apiRoot"] = apiRootVar
 	}
 	client := Nnrf_NFManagement.NewAPIClient(configuration)
 
 	var res *http.Response
-	apiUpdateNFInstanceRequest := client.NFInstanceIDDocumentAPI.UpdateNFInstance(context.Background(), nssfSelf.NfId)
+	apiUpdateNFInstanceRequest := client.NFInstanceIDDocumentAPI.UpdateNFInstance(context.Background(), self.NfId)
 	apiUpdateNFInstanceRequest = apiUpdateNFInstanceRequest.PatchItem(patchItem)
-	receivedNfProfile, res, err := client.NFInstanceIDDocumentAPI.UpdateNFInstanceExecute(apiUpdateNFInstanceRequest)
-	if res != nil && res.Body != nil {
-		defer func() {
-			if bodyCloseErr := res.Body.Close(); bodyCloseErr != nil {
-				logger.AppLog.Errorf("UpdateNFInstance response body cannot close: %+v", bodyCloseErr)
-			}
-		}()
-	}
+	receivedNfProfile, res, err = client.NFInstanceIDDocumentAPI.UpdateNFInstanceExecute(apiUpdateNFInstanceRequest)
+	defer closeNFManagementResponseBody(res, "UpdateNFInstance")
 	if err != nil {
-		if openapiErr, ok := err.(openapi.GenericOpenAPIError); ok {
+		if openapiErr, ok := openapi.AsGenericOpenAPIError(err); ok {
 			if model := openapiErr.Model(); model != nil {
 				if problem, ok := model.(models.ProblemDetails); ok {
-					return &models.NFProfile{}, &problem, nil
+					return models.NewNFProfileWithDefaults(), &problem, nil
 				}
 			}
 		}
-		return &models.NFProfile{}, nil, err
+		return models.NewNFProfileWithDefaults(), nil, err
 	}
 
 	if res == nil {
-		return &models.NFProfile{}, nil, fmt.Errorf("no response from server")
+		return models.NewNFProfileWithDefaults(), nil, openapi.ReportError(errServerNoResponse)
 	}
 	if res.StatusCode == http.StatusOK || res.StatusCode == http.StatusNoContent {
-		if receivedNfProfile == nil {
-			return &models.NFProfile{}, nil, nil
-		}
 		return receivedNfProfile, nil, nil
 	}
-	return &models.NFProfile{}, nil, fmt.Errorf("unexpected response code")
-}
-
-var SendDeregisterNFInstance = func() error {
-	logger.AppLog.Infoln("send Deregister NFInstance")
-
-	nssfSelf := nssfContext.NSSF_Self()
-	// Set client and set url
-	configuration := Nnrf_NFManagement.NewConfiguration()
-	serverConfig := &configuration.Servers[0]
-	if apiRootVar, exists := serverConfig.Variables["apiRoot"]; exists {
-		apiRootVar.DefaultValue = nssfSelf.NrfUri
-		serverConfig.Variables["apiRoot"] = apiRootVar
-	}
-	client := Nnrf_NFManagement.NewAPIClient(configuration)
-	apiDeregisterNFInstanceRequest := client.NFInstanceIDDocumentAPI.DeregisterNFInstance(context.Background(), nssfSelf.NfId)
-	res, err := client.NFInstanceIDDocumentAPI.DeregisterNFInstanceExecute(apiDeregisterNFInstanceRequest)
-	if err != nil {
-		return err
-	}
-	if res == nil {
-		return fmt.Errorf("no response from server")
-	}
-	if res.StatusCode == http.StatusNoContent {
-		return nil
-	}
-	return fmt.Errorf("unexpected response code")
+	return models.NewNFProfileWithDefaults(), nil, openapi.ReportError("unexpected response code")
 }
