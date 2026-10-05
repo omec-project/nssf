@@ -127,7 +127,12 @@ func (nssf *NSSF) Start() {
 		os.Exit(0)
 	}()
 
-	sslLog := filepath.Dir(factory.NssfConfig.CfgLocation) + "/sslkey.log"
+	// TLS key logging is a debugging aid: off unless the operator sets SSLKEYLOGFILE.
+	sslLog := os.Getenv("SSLKEYLOGFILE")
+	if sslLog != "" {
+		logger.InitLog.Warnf("TLS key logging is enabled (SSLKEYLOGFILE=%s): SBI traffic is "+
+			"decryptable by anyone who can read this file", sslLog)
+	}
 	server, err := http2_util.NewServer(addr, sslLog, router)
 
 	if server == nil {
