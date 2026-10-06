@@ -110,10 +110,10 @@ func NSSAIAvailabilityPatchProcedure(nssaiAvailabilityUpdateInfo []models.PatchI
 	// Provide JSON string with null or empty value in `Value` of `PatchItem`
 	for i, patchItem := range nssaiAvailabilityUpdateInfo {
 		if reflect.ValueOf(patchItem.Value).Kind() == reflect.Map {
-			_, exist := patchItem.Value.(map[string]interface{})["sst"]
-			_, notExist := patchItem.Value.(map[string]interface{})["sd"]
+			_, exist := patchItem.Value.(map[string]any)["sst"]
+			_, notExist := patchItem.Value.(map[string]any)["sd"]
 			if exist && !notExist {
-				nssaiAvailabilityUpdateInfo[i].Value.(map[string]interface{})["sd"] = ""
+				nssaiAvailabilityUpdateInfo[i].Value.(map[string]any)["sd"] = ""
 			}
 		}
 	}
