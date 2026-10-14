@@ -28,7 +28,6 @@ import (
 
 // NSSAIAvailability DELETE method
 func NSSAIAvailabilityDeleteProcedure(nfId string) *models.ProblemDetails {
-	var problemDetails *models.ProblemDetails
 	factory.ConfigLock.Lock()
 	defer factory.ConfigLock.Unlock()
 	for i, amfConfig := range factory.NssfConfig.Configuration.AmfList {
@@ -40,7 +39,7 @@ func NSSAIAvailabilityDeleteProcedure(nfId string) *models.ProblemDetails {
 		}
 	}
 
-	problemDetails = utils.ProblemDetails(
+	problemDetails := utils.ProblemDetails(
 		util.UNSUPPORTED_RESOURCE,
 		http.StatusNotFound,
 		fmt.Sprintf("AMF ID '%s' does not exist", nfId),

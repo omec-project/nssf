@@ -17,7 +17,6 @@ import (
 
 	"github.com/omec-project/nssf/factory"
 	"github.com/omec-project/nssf/logger"
-	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/models"
 )
 
@@ -322,9 +321,9 @@ func AuthorizeOfTaListFromConfig(taiList []models.Tai) []models.AuthorizedNssaiA
 		for _, tai := range taiList {
 			if reflect.DeepEqual(*taConfig.Tai, tai) {
 				var authorizedNssaiAvailabilityData models.AuthorizedNssaiAvailabilityData
-				authorizedNssaiAvailabilityData.Tai = tai
-				authorizedNssaiAvailabilityData.SupportedSnssaiList = taConfig.SupportedSnssaiList
-				authorizedNssaiAvailabilityData.RestrictedSnssaiList = getRestrictedSnssaiListFromConfigLocked(tai)
+				authorizedNssaiAvailabilityData.SetTai(tai)
+				authorizedNssaiAvailabilityData.SetSupportedSnssaiList(taConfig.SupportedSnssaiList)
+				authorizedNssaiAvailabilityData.SetRestrictedSnssaiList(getRestrictedSnssaiListFromConfigLocked(tai))
 
 				authorizedNssaiAvailabilityDataList = append(authorizedNssaiAvailabilityDataList, authorizedNssaiAvailabilityData)
 			}
@@ -338,7 +337,7 @@ func FindMappingWithServingSnssai(
 	snssai models.Snssai, mappings []models.MappingOfSnssai,
 ) (models.MappingOfSnssai, bool) {
 	for _, mapping := range mappings {
-		if factory.SnssaiToKey(mapping.ServingSnssai) == factory.SnssaiToKey(snssai) {
+		if factory.SnssaiToKey(mapping.GetServingSnssai()) == factory.SnssaiToKey(snssai) {
 			return mapping, true
 		}
 	}
@@ -348,7 +347,7 @@ func FindMappingWithServingSnssai(
 // Find target S-NSSAI mapping with home S-NSSAIs from mapping of S-NSSAI(s)
 func FindMappingWithHomeSnssai(snssai models.Snssai, mappings []models.MappingOfSnssai) (models.MappingOfSnssai, bool) {
 	for _, mapping := range mappings {
-		if factory.SnssaiToKey(mapping.HomeSnssai) == factory.SnssaiToKey(snssai) {
+		if factory.SnssaiToKey(mapping.GetHomeSnssai()) == factory.SnssaiToKey(snssai) {
 			return mapping, true
 		}
 	}
@@ -361,13 +360,13 @@ func AddAllowedSnssai(allowedSnssai models.AllowedSnssai, accessType models.Acce
 ) {
 	hitAllowedNssai := false
 	allowedNssaiNum := 8
-	for i := range authorizedNetworkSliceInfo.AllowedNssaiList {
-		if authorizedNetworkSliceInfo.AllowedNssaiList[i].AccessType == accessType {
+	for i := range authorizedNetworkSliceInfo.GetAllowedNssaiList() {
+		if authorizedNetworkSliceInfo.GetAllowedNssaiList()[i].AccessType == accessType {
 			hitAllowedNssai = true
-			if len(authorizedNetworkSliceInfo.AllowedNssaiList[i].AllowedSnssaiList) == allowedNssaiNum {
+			if len(authorizedNetworkSliceInfo.GetAllowedNssaiList()[i].AllowedSnssaiList) == allowedNssaiNum {
 				logger.Util.Infoln("unable to add a new Allowed S-NSSAI since already eight S-NSSAIs in Allowed NSSAI")
 			} else {
-				authorizedNetworkSliceInfo.AllowedNssaiList[i].AllowedSnssaiList = append(authorizedNetworkSliceInfo.AllowedNssaiList[i].AllowedSnssaiList, allowedSnssai)
+				authorizedNetworkSliceInfo.GetAllowedNssaiList()[i].AllowedSnssaiList = append(authorizedNetworkSliceInfo.GetAllowedNssaiList()[i].AllowedSnssaiList, allowedSnssai)
 			}
 			break
 		}
@@ -378,7 +377,7 @@ func AddAllowedSnssai(allowedSnssai models.AllowedSnssai, accessType models.Acce
 		allowedNssaiElement.AllowedSnssaiList = append(allowedNssaiElement.AllowedSnssaiList, allowedSnssai)
 		allowedNssaiElement.AccessType = accessType
 
-		authorizedNetworkSliceInfo.AllowedNssaiList = append(authorizedNetworkSliceInfo.AllowedNssaiList, allowedNssaiElement)
+		authorizedNetworkSliceInfo.SetAllowedNssaiList(append(authorizedNetworkSliceInfo.GetAllowedNssaiList(), allowedNssaiElement))
 	}
 }
 
@@ -386,7 +385,7 @@ func AddAllowedSnssai(allowedSnssai models.AllowedSnssai, accessType models.Acce
 func AddAmfInformation(tai models.Tai, authorizedNetworkSliceInfo *models.AuthorizedNetworkSliceInfo) {
 	factory.ConfigLock.RLock()
 	defer factory.ConfigLock.RUnlock()
-	if len(authorizedNetworkSliceInfo.AllowedNssaiList) == 0 {
+	if len(authorizedNetworkSliceInfo.GetAllowedNssaiList()) == 0 {
 		return
 	}
 
@@ -398,8 +397,8 @@ func AddAmfInformation(tai models.Tai, authorizedNetworkSliceInfo *models.Author
 	// TODO: Policies of AMF selection (e.g. load balance between AMF instances)
 	for _, amfSetConfig := range factory.NssfConfig.Configuration.AmfSetList {
 		hitAllowedNssai := true
-		for _, allowedNssai := range authorizedNetworkSliceInfo.AllowedNssaiList {
-			for _, allowedSnssai := range allowedNssai.AllowedSnssaiList {
+		for _, allowedNssai := range authorizedNetworkSliceInfo.GetAllowedNssaiList() {
+			for _, allowedSnssai := range allowedNssai.GetAllowedSnssaiList() {
 				if CheckSupportedNssaiAvailabilityData(allowedSnssai.AllowedSnssai,
 					tai, amfSetConfig.SupportedNssaiAvailabilityData) {
 					continue
@@ -417,14 +416,14 @@ func AddAmfInformation(tai models.Tai, authorizedNetworkSliceInfo *models.Author
 			continue
 		} else {
 			// Add AMF Set to Authorized Network Slice Info
-			if len(amfSetConfig.AmfList) != 0 {
+			if len(amfSetConfig.AmfList) > 0 {
 				// List of candidate AMF(s) provided in configuration
-				authorizedNetworkSliceInfo.CandidateAmfList = append(authorizedNetworkSliceInfo.CandidateAmfList, amfSetConfig.AmfList...)
+				authorizedNetworkSliceInfo.SetCandidateAmfList(append(authorizedNetworkSliceInfo.GetCandidateAmfList(), amfSetConfig.AmfList...))
 			} else {
 				// TODO: Possibly querying the NRF
-				authorizedNetworkSliceInfo.TargetAmfSet = openapi.PtrString(amfSetConfig.AmfSetId)
+				authorizedNetworkSliceInfo.SetTargetAmfSet(amfSetConfig.AmfSetId)
 				// The API URI of the NRF may be included if target AMF Set is included
-				authorizedNetworkSliceInfo.NrfAmfSet = openapi.PtrString(amfSetConfig.NrfAmfSet)
+				authorizedNetworkSliceInfo.SetNrfAmfSet(amfSetConfig.NrfAmfSet)
 			}
 			return
 		}
@@ -435,7 +434,7 @@ func AddAmfInformation(tai models.Tai, authorizedNetworkSliceInfo *models.Author
 	hitAmf := false
 	for _, amfConfig := range factory.NssfConfig.Configuration.AmfList {
 		hitAllowedNssai := true
-		for _, allowedNssai := range authorizedNetworkSliceInfo.AllowedNssaiList {
+		for _, allowedNssai := range authorizedNetworkSliceInfo.GetAllowedNssaiList() {
 			for _, allowedSnssai := range allowedNssai.AllowedSnssaiList {
 				if CheckSupportedNssaiAvailabilityData(allowedSnssai.AllowedSnssai,
 					tai, amfConfig.SupportedNssaiAvailabilityData) {
@@ -454,7 +453,7 @@ func AddAmfInformation(tai models.Tai, authorizedNetworkSliceInfo *models.Author
 			continue
 		} else {
 			// Add AMF Set to Authorized Network Slice Info
-			authorizedNetworkSliceInfo.CandidateAmfList = append(authorizedNetworkSliceInfo.CandidateAmfList, amfConfig.NfId)
+			authorizedNetworkSliceInfo.SetCandidateAmfList(append(authorizedNetworkSliceInfo.GetCandidateAmfList(), amfConfig.NfId))
 			hitAmf = true
 		}
 	}

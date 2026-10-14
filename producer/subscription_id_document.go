@@ -34,7 +34,8 @@ func HandleNSSAIAvailabilityUnsubscribe(request *httpwrapper.Request) *httpwrapp
 
 	if problemDetails == nil {
 		return httpwrapper.NewResponse(http.StatusNoContent, nil, nil)
-	} else if reflect.DeepEqual(*problemDetails, models.ProblemDetails{}) {
+	}
+	if reflect.DeepEqual(*problemDetails, models.ProblemDetails{}) {
 		problemDetails = utils.ProblemDetailsUnspecified()
 		return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 	}

@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/omec-project/nssf/factory"
-	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/openapi/v2/nfConfigApi"
 )
@@ -156,13 +155,13 @@ func TestHandlePolledPlmnSnssaiConfig_ExpectChannelNotToBeUpdated(t *testing.T) 
 	plmn1 := nfConfigApi.PlmnSnssai{
 		PlmnId: nfConfigApi.PlmnId{Mcc: "001", Mnc: "01"},
 		SNssaiList: []nfConfigApi.Snssai{
-			{Sst: 1, Sd: openapi.PtrString("010203")},
+			{Sst: 1, Sd: new("010203")},
 		},
 	}
 	plmn2 := nfConfigApi.PlmnSnssai{
 		PlmnId: nfConfigApi.PlmnId{Mcc: "001", Mnc: "01"},
 		SNssaiList: []nfConfigApi.Snssai{
-			{Sst: 2, Sd: openapi.PtrString("112233")},
+			{Sst: 2, Sd: new("112233")},
 		},
 	}
 
@@ -252,13 +251,13 @@ func TestHandlePolledPlmnSnssaiConfig_ExpectChannelUpdate(t *testing.T) {
 	plmn1 := nfConfigApi.PlmnSnssai{
 		PlmnId: nfConfigApi.PlmnId{Mcc: "001", Mnc: "01"},
 		SNssaiList: []nfConfigApi.Snssai{
-			{Sst: 1, Sd: openapi.PtrString("010203")},
+			{Sst: 1, Sd: new("010203")},
 		},
 	}
 	plmn2 := nfConfigApi.PlmnSnssai{
 		PlmnId: nfConfigApi.PlmnId{Mcc: "002", Mnc: "02"},
 		SNssaiList: []nfConfigApi.Snssai{
-			{Sst: 2, Sd: openapi.PtrString("112233")},
+			{Sst: 2, Sd: new("112233")},
 		},
 	}
 
@@ -334,7 +333,7 @@ func TestHandlePolledPlmnSnssaiConfig_ExpectChannelUpdate(t *testing.T) {
 }
 
 func TestConvertPlmnSnssaiList(t *testing.T) {
-	sdPtr := openapi.PtrString("010203")
+	sdPtr := new("010203")
 
 	tests := []struct {
 		name                   string
@@ -399,7 +398,7 @@ func TestConvertPlmnSnssaiList(t *testing.T) {
 				{
 					PlmnId: nfConfigApi.PlmnId{Mcc: "002", Mnc: "02"},
 					SNssaiList: []nfConfigApi.Snssai{
-						{Sst: 3, Sd: openapi.PtrString("112233")},
+						{Sst: 3, Sd: new("112233")},
 					},
 				},
 			},

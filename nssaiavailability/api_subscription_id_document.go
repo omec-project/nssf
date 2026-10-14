@@ -51,8 +51,7 @@ func HTTPNSSAIAvailabilityUnsubscribe(c *gin.Context) {
 	responseBody, err := openapi.SetBody(rsp.Body, "application/json")
 	if err != nil {
 		logger.HandlerLog.Errorln(err)
-		problemDetails := utils.ProblemDetailsSystemFailure(err.Error())
-		c.JSON(http.StatusInternalServerError, problemDetails)
+		c.JSON(http.StatusInternalServerError, utils.ProblemDetailsSystemFailure(err.Error()))
 	} else {
 		c.Data(rsp.Status, "application/json", responseBody.Bytes())
 	}

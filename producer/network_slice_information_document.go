@@ -15,7 +15,6 @@ package producer
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -24,6 +23,7 @@ import (
 	"github.com/omec-project/nssf/logger"
 	stats "github.com/omec-project/nssf/metrics"
 	"github.com/omec-project/nssf/util"
+	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/openapi/v2/utils"
 	"github.com/omec-project/util/httpwrapper"
@@ -43,7 +43,7 @@ func parseSnssaiValues(sst, sd string) (models.Snssai, bool, error) {
 
 	if sst == "" {
 		if sd != "" {
-			return snssai, false, fmt.Errorf("missing sst for snssai")
+			return snssai, false, openapi.ReportError("missing sst for snssai")
 		}
 		return snssai, false, nil
 	}
@@ -66,7 +66,7 @@ func parseExplodedSnssai(query url.Values, prefix string) (models.Snssai, bool, 
 	sd := query.Get(prefix + "[sd]")
 	snssai, found, err := parseSnssaiValues(sst, sd)
 	if err != nil && sst == "" && sd != "" {
-		return snssai, false, fmt.Errorf("missing sst for %s", prefix)
+		return snssai, false, openapi.ReportError("missing sst for %s", prefix)
 	}
 	return snssai, found, err
 }
@@ -125,7 +125,7 @@ func parseExplodedSnssaiEntries(query url.Values, prefix string) ([]models.Snssa
 		item, found, err := parseSnssaiValues(sst, sd)
 		if err != nil {
 			if sst == "" && sd != "" {
-				return nil, nil, fmt.Errorf("missing sst for %s at index %d", prefix, i)
+				return nil, nil, openapi.ReportError("missing sst for %s at index %d", prefix, i)
 			}
 			return nil, nil, err
 		}
@@ -371,11 +371,11 @@ func parseQueryParameter(query url.Values) (NsselectionQueryParameter, error) {
 // Check if the NF service consumer is authorized
 // TODO: Check if the NF service consumer is legal with local configuration, or possibly after querying NRF through `nf-id` e.g. Whether the V-NSSF is authorized
 func checkNfServiceConsumer(nfType models.NFType) error {
-	if nfType != models.NFTYPE_AMF && nfType != models.NFTYPE_NSSF {
-		return fmt.Errorf("`nf-type`:'%s' is not authorized to retrieve the slice selection information", string(nfType))
+	if nfType == models.NFTYPE_AMF || nfType == models.NFTYPE_NSSF {
+		return nil
 	}
 
-	return nil
+	return openapi.ReportError("`nf-type`:'%s' is not authorized to retrieve the slice selection information", string(nfType))
 }
 
 // NSSelectionGet - Retrieve the Network Slice Selection Information
@@ -392,13 +392,13 @@ func HandleNSSelectionGet(request *httpwrapper.Request) *httpwrapper.Response {
 	if response != nil {
 		stats.IncrementNssfNsSelectionsStats(nfType, nfId, "SUCCESS")
 		return httpwrapper.NewResponse(http.StatusOK, nil, response)
-	} else if problemDetails != nil {
+	}
+	if problemDetails != nil {
 		stats.IncrementNssfNsSelectionsStats(nfType, nfId, "FAILURE")
 		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	}
-	problemDetails = utils.ProblemDetailsUnspecified()
 	stats.IncrementNssfNsSelectionsStats(nfType, nfId, "FAILURE")
-	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return httpwrapper.NewResponse(http.StatusForbidden, nil, utils.ProblemDetailsUnspecified())
 }
 
 func NSSelectionGetProcedure(query url.Values) (*models.AuthorizedNetworkSliceInfo, *models.ProblemDetails) {
@@ -415,8 +415,7 @@ func NSSelectionGetProcedure(query url.Values) (*models.AuthorizedNetworkSliceIn
 	if err != nil {
 		problemDetail := "[Query Parameter] " + err.Error()
 		logger.Nsselection.Errorln(problemDetail)
-		problemDetails = utils.ProblemDetailsMalformedRequestSyntax(problemDetail)
-		return nil, problemDetails
+		return nil, utils.ProblemDetailsMalformedRequestSyntax(problemDetail)
 	}
 
 	// Check permission of NF service consumer
@@ -426,15 +425,13 @@ func NSSelectionGetProcedure(query url.Values) (*models.AuthorizedNetworkSliceIn
 			Param:  "nf-type",
 			Reason: &problemDetail,
 		}}
-		problemDetails = utils.ProblemDetailsWithInvalidParams(util.INVALID_REQUEST, http.StatusBadRequest, problemDetail, invalidParams)
-		return nil, problemDetails
+		return nil, utils.ProblemDetailsWithInvalidParams(util.INVALID_REQUEST, http.StatusBadRequest, problemDetail, invalidParams)
 	}
 
 	err = checkNfServiceConsumer(*param.NfType)
 	if err != nil {
 		// status = http.StatusForbidden
-		problemDetails = utils.ProblemDetails(util.UNAUTHORIZED_CONSUMER, http.StatusForbidden, err.Error())
-		return nil, problemDetails
+		return nil, utils.ProblemDetails(util.UNAUTHORIZED_CONSUMER, http.StatusForbidden, err.Error())
 	}
 
 	if param.SliceInfoRequestForRegistration == nil && param.SliceInfoRequestForPduSession == nil {
@@ -443,8 +440,7 @@ func NSSelectionGetProcedure(query url.Values) (*models.AuthorizedNetworkSliceIn
 			{Param: "slice-info-request-for-registration", Reason: &problemDetail},
 			{Param: "slice-info-request-for-pdu-session", Reason: &problemDetail},
 		}
-		problemDetails = utils.ProblemDetailsWithInvalidParams(util.INVALID_REQUEST, http.StatusBadRequest, problemDetail, invalidParams)
-		return nil, problemDetails
+		return nil, utils.ProblemDetailsWithInvalidParams(util.INVALID_REQUEST, http.StatusBadRequest, problemDetail, invalidParams)
 	}
 
 	if param.SliceInfoRequestForRegistration != nil {
