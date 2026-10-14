@@ -55,7 +55,7 @@ func StartPollingService(ctx context.Context, webuiUri string, plmnConfigChan ch
 		case <-time.After(interval):
 			newConfig, err := fetchPlmnConfig(&poller, pollingEndpoint)
 			if err != nil {
-				interval = minDuration(interval*time.Duration(pollingBackoffFactor), pollingMaxBackoff)
+				interval = min(interval*time.Duration(pollingBackoffFactor), pollingMaxBackoff)
 				logger.PollConfigLog.Errorf("Polling error. Retrying in %v: %+v", interval, err)
 				continue
 			}
@@ -152,11 +152,4 @@ func convertPlmnSnssaiList(newConfig []nfConfigApi.PlmnSnssai) ([]models.PlmnId,
 	}
 
 	return newPlmnList, newSupportedNssais
-}
-
-func minDuration(a, b time.Duration) time.Duration {
-	if a < b {
-		return a
-	}
-	return b
 }

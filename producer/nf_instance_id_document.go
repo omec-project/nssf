@@ -55,11 +55,11 @@ func HandleNSSAIAvailabilityPatch(request *httpwrapper.Request) *httpwrapper.Res
 
 	if response != nil {
 		return httpwrapper.NewResponse(http.StatusOK, nil, response)
-	} else if problemDetails != nil {
+	}
+	if problemDetails != nil {
 		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	}
-	problemDetails = utils.ProblemDetailsUnspecified()
-	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return httpwrapper.NewResponse(http.StatusForbidden, nil, utils.ProblemDetailsUnspecified())
 }
 
 // HandleNSSAIAvailabilityPut - Updates/replaces the NSSF
@@ -74,9 +74,9 @@ func HandleNSSAIAvailabilityPut(request *httpwrapper.Request) *httpwrapper.Respo
 
 	if response != nil {
 		return httpwrapper.NewResponse(http.StatusOK, nil, response)
-	} else if problemDetails != nil {
+	}
+	if problemDetails != nil {
 		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	}
-	problemDetails = utils.ProblemDetailsUnspecified()
-	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	return httpwrapper.NewResponse(http.StatusForbidden, nil, utils.ProblemDetailsUnspecified())
 }

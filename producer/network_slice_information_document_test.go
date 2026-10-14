@@ -15,11 +15,11 @@ import (
 
 func TestParseQueryParameterSupportsExplodedRegistrationRequest(t *testing.T) {
 	expectedSliceInfo := models.NewSliceInfoForRegistration()
-	subscribedSnssai := models.NewSubscribedSnssai(models.Snssai{Sst: 1, Sd: openapi.PtrString("010203")})
+	subscribedSnssai := models.NewSubscribedSnssai(models.Snssai{Sst: 1, Sd: new("010203")})
 	subscribedSnssai.SetDefaultIndication(true)
 	expectedSliceInfo.SetSubscribedNssai([]models.SubscribedSnssai{*subscribedSnssai})
-	expectedSliceInfo.SetRequestedNssai([]models.Snssai{{Sst: 1, Sd: openapi.PtrString("112233")}})
-	mappingOfSnssai := models.NewMappingOfSnssai(models.Snssai{Sst: 1, Sd: openapi.PtrString("112233")}, models.Snssai{Sst: 2, Sd: openapi.PtrString("445566")})
+	expectedSliceInfo.SetRequestedNssai([]models.Snssai{{Sst: 1, Sd: new("112233")}})
+	mappingOfSnssai := models.NewMappingOfSnssai(models.Snssai{Sst: 1, Sd: new("112233")}, models.Snssai{Sst: 2, Sd: new("445566")})
 	expectedSliceInfo.SetMappingOfNssai([]models.MappingOfSnssai{*mappingOfSnssai})
 	expectedSliceInfo.SetRequestMapping(true)
 

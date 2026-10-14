@@ -36,15 +36,12 @@ func nsselectionForPduSession(param NsselectionQueryParameter,
 	authorizedNetworkSliceInfo *models.AuthorizedNetworkSliceInfo,
 	problemDetails *models.ProblemDetails,
 ) int {
-	var status int
 	if param.HomePlmnId != nil {
 		// Check whether UE's Home PLMN is supported when UE is a roamer
 		if !util.CheckSupportedHplmn(*param.HomePlmnId) {
 			rejectedNssaiInPlmn := append(authorizedNetworkSliceInfo.GetRejectedNssaiInPlmn(), param.SliceInfoRequestForPduSession.GetSNssai())
 			authorizedNetworkSliceInfo.SetRejectedNssaiInPlmn(rejectedNssaiInPlmn)
-
-			status = http.StatusOK
-			return status
+			return http.StatusOK
 		}
 	}
 
@@ -53,9 +50,7 @@ func nsselectionForPduSession(param NsselectionQueryParameter,
 		if !util.CheckSupportedTa(*param.Tai) {
 			rejectedNssaiInTa := append(authorizedNetworkSliceInfo.GetRejectedNssaiInTa(), param.SliceInfoRequestForPduSession.GetSNssai())
 			authorizedNetworkSliceInfo.SetRejectedNssaiInTa(rejectedNssaiInTa)
-
-			status = http.StatusOK
-			return status
+			return http.StatusOK
 		}
 	}
 
@@ -70,8 +65,7 @@ func nsselectionForPduSession(param NsselectionQueryParameter,
 			"S-NSSAI in Requested NSSAI is not supported in PLMN",
 		)
 		problemDetails.SetCause(utils.CauseSnssaiNotSupported)
-		status = http.StatusForbidden
-		return status
+		return http.StatusForbidden
 	}
 
 	if param.HomePlmnId != nil {
@@ -81,8 +75,7 @@ func nsselectionForPduSession(param NsselectionQueryParameter,
 			invalidParam.SetReason(problemDetail)
 			invalidParams := []models.InvalidParam{*invalidParam}
 			*problemDetails = *utils.ProblemDetailsWithInvalidParams(util.INVALID_REQUEST, http.StatusBadRequest, problemDetail, invalidParams)
-			status = http.StatusBadRequest
-			return status
+			return http.StatusBadRequest
 		}
 	} else {
 		if param.SliceInfoRequestForPduSession.GetRoamingIndication() != models.ROAMINGINDICATION_NON_ROAMING {
@@ -92,8 +85,7 @@ func nsselectionForPduSession(param NsselectionQueryParameter,
 			invalidParam.SetReason(problemDetail)
 			invalidParams := []models.InvalidParam{*invalidParam}
 			*problemDetails = *utils.ProblemDetailsWithInvalidParams(util.INVALID_REQUEST, http.StatusBadRequest, problemDetail, invalidParams)
-			status = http.StatusBadRequest
-			return status
+			return http.StatusBadRequest
 		}
 	}
 
@@ -102,8 +94,7 @@ func nsselectionForPduSession(param NsselectionQueryParameter,
 		// Add it to Rejected NSSAI in TA
 		rejectedNssaiInTa := append(authorizedNetworkSliceInfo.GetRejectedNssaiInTa(), param.SliceInfoRequestForPduSession.GetSNssai())
 		authorizedNetworkSliceInfo.SetRejectedNssaiInTa(rejectedNssaiInTa)
-		status = http.StatusOK
-		return status
+		return http.StatusOK
 	}
 
 	nsiInformationList := util.GetNsiInformationListFromConfig(param.SliceInfoRequestForPduSession.GetSNssai())

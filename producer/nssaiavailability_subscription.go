@@ -86,7 +86,6 @@ func NSSAIAvailabilityUnsubscribeProcedure(subscriptionId string) *models.Proble
 		if subscription.SubscriptionId == subscriptionId {
 			factory.NssfConfig.Subscriptions = append(factory.NssfConfig.Subscriptions[:i],
 				factory.NssfConfig.Subscriptions[i+1:]...)
-
 			return nil
 		}
 	}

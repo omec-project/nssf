@@ -39,18 +39,16 @@ func HTTPNSSAIAvailabilityPost(c *gin.Context) {
 
 	requestBody, err := c.GetRawData()
 	if err != nil {
-		problemDetail := utils.ProblemDetailsSystemFailure(err.Error())
 		logger.HandlerLog.Errorf("get Request Body error: %+v", err)
-		c.JSON(http.StatusInternalServerError, problemDetail)
+		c.JSON(http.StatusInternalServerError, utils.ProblemDetailsSystemFailure(err.Error()))
 		return
 	}
 
 	err = openapi.Decode(&createData, requestBody, "application/json")
 	if err != nil {
 		problemDetail := "[Request Body] " + err.Error()
-		rsp := utils.ProblemDetailsMalformedRequestSyntax(problemDetail)
 		logger.HandlerLog.Errorln(problemDetail)
-		c.JSON(http.StatusBadRequest, rsp)
+		c.JSON(http.StatusBadRequest, utils.ProblemDetailsMalformedRequestSyntax(problemDetail))
 		return
 	}
 
@@ -63,8 +61,7 @@ func HTTPNSSAIAvailabilityPost(c *gin.Context) {
 	responseBody, err := openapi.SetBody(rsp.Body, "application/json")
 	if err != nil {
 		logger.HandlerLog.Errorln(err)
-		problemDetails := utils.ProblemDetailsSystemFailure(err.Error())
-		c.JSON(http.StatusInternalServerError, problemDetails)
+		c.JSON(http.StatusInternalServerError, utils.ProblemDetailsSystemFailure(err.Error()))
 	} else {
 		c.Data(rsp.Status, "application/json", responseBody.Bytes())
 	}

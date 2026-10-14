@@ -36,7 +36,8 @@ func HandleNSSAIAvailabilityPost(request *httpwrapper.Request) *httpwrapper.Resp
 	if response != nil {
 		// TODO: Based on TS 29.531 5.3.2.3.1, add location header
 		return httpwrapper.NewResponse(http.StatusCreated, nil, response)
-	} else if problemDetails != nil {
+	}
+	if problemDetails != nil {
 		return httpwrapper.NewResponse(int(problemDetails.GetStatus()), nil, problemDetails)
 	}
 	problemDetails = utils.ProblemDetailsUnspecified()
