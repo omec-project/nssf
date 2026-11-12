@@ -21,9 +21,12 @@ import (
 var (
 	keepAliveTimer      *time.Timer
 	keepAliveTimerMutex sync.Mutex
-	registerCtxMutex    sync.Mutex
-	afterFunc           = time.AfterFunc
-	retryTime           = 10 * time.Second
+	// keepAliveShutdown is guarded by keepAliveTimerMutex. When set, late registration or
+	// heartbeat completions must not re-arm the keepalive timer.
+	keepAliveShutdown bool
+	registerCtxMutex  sync.Mutex
+	afterFunc         = time.AfterFunc
+	retryTime         = 10 * time.Second
 )
 
 const (
@@ -36,6 +39,9 @@ const (
 func StartNfRegistrationService(ctx context.Context, plmnConfigChan <-chan []models.PlmnId) {
 	var registerCancel context.CancelFunc
 	var registerCtx context.Context
+	keepAliveTimerMutex.Lock()
+	keepAliveShutdown = false
+	keepAliveTimerMutex.Unlock()
 	logger.NrfRegistrationLog.Infoln("started NF registration to NRF service")
 	for {
 		select {
@@ -43,9 +49,7 @@ func StartNfRegistrationService(ctx context.Context, plmnConfigChan <-chan []mod
 			if registerCancel != nil {
 				registerCancel()
 			}
-			keepAliveTimerMutex.Lock()
-			stopKeepAliveTimer()
-			keepAliveTimerMutex.Unlock()
+			shutdownKeepAliveTimer()
 			logger.NrfRegistrationLog.Infoln("NF registration service shutting down")
 			return
 		case newPlmnConfig, ok := <-plmnConfigChan:
@@ -53,9 +57,7 @@ func StartNfRegistrationService(ctx context.Context, plmnConfigChan <-chan []mod
 				if registerCancel != nil {
 					registerCancel()
 				}
-				keepAliveTimerMutex.Lock()
-				stopKeepAliveTimer()
-				keepAliveTimerMutex.Unlock()
+				shutdownKeepAliveTimer()
 				logger.NrfRegistrationLog.Infoln("PLMN config channel closed; stopping NF registration service")
 				return
 			}
@@ -84,6 +86,11 @@ var registerNF = func(registerCtx context.Context, newPlmnConfig []models.PlmnId
 	defer registerCtxMutex.Unlock()
 	interval := 0 * time.Millisecond
 	for {
+		// select picks randomly when both cases are ready, so check cancellation first
+		if registerCtx.Err() != nil {
+			logger.NrfRegistrationLog.Infoln("no-op. Registration context was cancelled")
+			return
+		}
 		select {
 		case <-registerCtx.Done():
 			logger.NrfRegistrationLog.Infoln("no-op. Registration context was cancelled")
@@ -96,6 +103,11 @@ var registerNF = func(registerCtx context.Context, newPlmnConfig []models.PlmnId
 				continue
 			}
 			logger.NrfRegistrationLog.Infoln("register NSSF instance to NRF with updated profile succeeded")
+			if registerCtx.Err() != nil {
+				// Superseded or deregistered while the request was in flight; do not re-arm the heartbeat
+				logger.NrfRegistrationLog.Infoln("registration context was cancelled, heartbeat timer will not be started")
+				return
+			}
 			startKeepAliveTimer(getProfileHeartbeatTimer(nfProfile), newPlmnConfig)
 			return
 		}
@@ -171,6 +183,10 @@ var DeregisterNF = func() {
 func startKeepAliveTimer(profileHeartbeatTimer int32, plmnConfig []models.PlmnId) {
 	keepAliveTimerMutex.Lock()
 	defer keepAliveTimerMutex.Unlock()
+	if keepAliveShutdown {
+		logger.NrfRegistrationLog.Infoln("NF registration service is shut down, heartbeat timer will not be started")
+		return
+	}
 	stopKeepAliveTimer()
 	heartbeatTimer := defaultHeartbeatTimer
 	if profileHeartbeatTimer > 0 {
@@ -180,6 +196,15 @@ func startKeepAliveTimer(profileHeartbeatTimer int32, plmnConfig []models.PlmnId
 	// AfterFunc starts a timer and waits for keepAliveTimer to elapse and then calls heartbeatNF function
 	keepAliveTimer = afterFunc(time.Duration(heartbeatTimer)*time.Second, heartbeatFunction)
 	logger.NrfRegistrationLog.Debugf("started heartbeat timer: %d sec", heartbeatTimer)
+}
+
+// shutdownKeepAliveTimer stops the keepalive timer and prevents it from being started again until
+// the registration service is restarted.
+func shutdownKeepAliveTimer() {
+	keepAliveTimerMutex.Lock()
+	defer keepAliveTimerMutex.Unlock()
+	keepAliveShutdown = true
+	stopKeepAliveTimer()
 }
 
 func stopKeepAliveTimer() {

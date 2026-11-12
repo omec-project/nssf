@@ -23,6 +23,9 @@ import (
 
 func startRegistrationServiceForTest(t *testing.T, ch <-chan []models.PlmnId) (context.CancelFunc, <-chan struct{}) {
 	t.Helper()
+	t.Cleanup(func() {
+		withKeepAliveTimerLock(func() { keepAliveShutdown = false })
+	})
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
 	go func() {
@@ -147,7 +150,10 @@ func TestNfRegistrationService_WhenConfigChanged_ThenRegisterNFSuccessAndStartTi
 	defer func() {
 		cancel()
 		<-done
+		// Wait for any active registration worker before removing its mock
+		registerCtxMutex.Lock()
 		consumer.SendRegisterNFInstance = originalSendRegisterNFInstance
+		registerCtxMutex.Unlock()
 		withKeepAliveTimerLock(func() {
 			stopKeepAliveTimer()
 		})
@@ -253,8 +259,9 @@ func TestNfRegistrationService_ConfigChanged_RetryIfRegisterNFFails(t *testing.T
 	defer func() {
 		cancel()
 		<-done
-		consumer.SendRegisterNFInstance = originalSendRegisterNFInstance
+		// Wait for any active registration worker before removing its mock
 		registerCtxMutex.Lock()
+		consumer.SendRegisterNFInstance = originalSendRegisterNFInstance
 		retryTime = originalRetryTime
 		registerCtxMutex.Unlock()
 		withKeepAliveTimerLock(func() {
@@ -484,4 +491,109 @@ func TestStartKeepAliveTimer_UsesProfileTimerOnlyWhenGreaterThanZero(t *testing.
 			}
 		})
 	}
+}
+
+func TestStartKeepAliveTimer_WhenShutdown_ThenTimerIsNotStarted(t *testing.T) {
+	withKeepAliveTimerLock(func() {
+		stopKeepAliveTimer()
+		keepAliveShutdown = false
+	})
+	t.Cleanup(func() {
+		withKeepAliveTimerLock(func() {
+			stopKeepAliveTimer()
+			keepAliveShutdown = false
+		})
+	})
+
+	shutdownKeepAliveTimer()
+	startKeepAliveTimer(60, nil)
+
+	withKeepAliveTimerLock(func() {
+		if keepAliveTimer != nil {
+			t.Error("expected keepAliveTimer not to be started after shutdown")
+		}
+	})
+}
+
+func TestNfRegistrationService_WhenChannelClosed_ThenKeepAliveCannotBeRearmed(t *testing.T) {
+	ch := make(chan []models.PlmnId)
+	_, done := startRegistrationServiceForTest(t, ch)
+	t.Cleanup(func() { withKeepAliveTimerLock(stopKeepAliveTimer) })
+
+	close(ch)
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("registration service did not stop after channel close")
+	}
+
+	// A registration or heartbeat that completes after shutdown must not re-arm the timer
+	startKeepAliveTimer(60, nil)
+	withKeepAliveTimerLock(func() {
+		if keepAliveTimer != nil {
+			t.Error("expected keepAliveTimer not to be re-armed after channel close")
+		}
+	})
+}
+
+func TestNfRegistrationService_WhenCancelledDuringRegistration_ThenHeartbeatTimerIsNotArmed(t *testing.T) {
+	originalSendRegisterNFInstance := consumer.SendRegisterNFInstance
+	originalSendDeregisterNFInstance := consumer.SendDeregisterNFInstance
+	withKeepAliveTimerLock(stopKeepAliveTimer)
+	ch := make(chan []models.PlmnId, 2)
+	cancel, done := startRegistrationServiceForTest(t, ch)
+	defer func() {
+		cancel()
+		<-done
+		// Wait for any active registration worker before removing its mock
+		registerCtxMutex.Lock()
+		consumer.SendRegisterNFInstance = originalSendRegisterNFInstance
+		consumer.SendDeregisterNFInstance = originalSendDeregisterNFInstance
+		registerCtxMutex.Unlock()
+		withKeepAliveTimerLock(stopKeepAliveTimer)
+	}()
+
+	requestInFlight := make(chan struct{})
+	releaseResponse := make(chan struct{})
+	var releaseOnce sync.Once
+	release := func() { releaseOnce.Do(func() { close(releaseResponse) }) }
+	// Registered after the cleanup above so it runs first: the blocked mock holds
+	// registerCtxMutex, and the cleanup would hang on it if the test failed early
+	defer release()
+	deregistered := make(chan struct{})
+	consumer.SendRegisterNFInstance = func([]models.PlmnId) (*models.NFProfile, string, error) {
+		close(requestInFlight)
+		<-releaseResponse
+		return models.NewNFProfileWithDefaults(), "", nil
+	}
+	consumer.SendDeregisterNFInstance = func() error {
+		close(deregistered)
+		return nil
+	}
+
+	ch <- []models.PlmnId{{Mcc: "001", Mnc: "01"}}
+	select {
+	case <-requestInFlight:
+	case <-time.After(time.Second):
+		t.Fatal("expected SendRegisterNFInstance to be called")
+	}
+
+	// An empty config cancels the in-flight registration and deregisters
+	ch <- []models.PlmnId{}
+	select {
+	case <-deregistered:
+	case <-time.After(time.Second):
+		t.Fatal("expected deregistration after empty config")
+	}
+
+	// The worker receives a successful response after cancellation and must exit without arming the timer
+	release()
+	// Holding registerCtxMutex means the worker has exited
+	registerCtxMutex.Lock()
+	defer registerCtxMutex.Unlock()
+	withKeepAliveTimerLock(func() {
+		if keepAliveTimer != nil {
+			t.Error("expected keepAliveTimer not to be armed after registration was cancelled")
+		}
+	})
 }

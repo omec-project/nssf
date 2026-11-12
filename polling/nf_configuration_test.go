@@ -119,6 +119,7 @@ func TestStartPollingService_Success(t *testing.T) {
 
 func TestStartPollingService_RetryAfterFailure(t *testing.T) {
 	originalFetchPlmnConfig := fetchPlmnConfig
+	originalFactoryConfig := factory.NssfConfig
 	originalInterval := initialPollingInterval
 	initialPollingInterval = 20 * time.Millisecond
 	plmnChan := make(chan []models.PlmnId, 1)
@@ -128,6 +129,7 @@ func TestStartPollingService_RetryAfterFailure(t *testing.T) {
 	defer func() {
 		waitForPollingServiceStop(t, cancel, done)
 		fetchPlmnConfig = originalFetchPlmnConfig
+		factory.NssfConfig = originalFactoryConfig
 		initialPollingInterval = originalInterval
 	}()
 	factory.NssfConfig = factory.Config{
