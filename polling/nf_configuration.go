@@ -8,7 +8,6 @@ package polling
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"reflect"
@@ -17,15 +16,19 @@ import (
 
 	"github.com/omec-project/nssf/factory"
 	"github.com/omec-project/nssf/logger"
+	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/openapi/v2/nfConfigApi"
 )
 
-const (
+var (
 	initialPollingInterval = 5 * time.Second
 	pollingMaxBackoff      = 40 * time.Second
-	pollingBackoffFactor   = 2
-	pollingPath            = "/nfconfig/plmn-snssai"
+)
+
+const (
+	pollingBackoffFactor = 2
+	pollingPath          = "/nfconfig/plmn-snssai"
 )
 
 type nfConfigPoller struct {
@@ -75,38 +78,38 @@ func (p *nfConfigPoller) fetchPlmnConfig(pollingEndpoint string) ([]nfConfigApi.
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, pollingEndpoint, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
+		return nil, openapi.ReportError("failed to create HTTP request: %w", err)
 	}
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("HTTP GET %v failed: %w", pollingEndpoint, err)
+		return nil, openapi.ReportError("HTTP GET %v failed: %w", pollingEndpoint, err)
 	}
 	defer resp.Body.Close()
 
 	contentType := resp.Header.Get("Content-Type")
 	if !strings.Contains(contentType, "application/json") {
-		return nil, fmt.Errorf("unexpected Content-Type: got %s, want application/json", contentType)
+		return nil, openapi.ReportError("unexpected Content-Type: got %s, want application/json", contentType)
 	}
 
 	switch resp.StatusCode {
 	case http.StatusOK:
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read response body: %w", err)
+			return nil, openapi.ReportError("failed to read response body: %w", err)
 		}
 
 		var config []nfConfigApi.PlmnSnssai
 		if err := json.Unmarshal(body, &config); err != nil {
-			return nil, fmt.Errorf("failed to parse JSON response: %w", err)
+			return nil, openapi.ReportError("failed to parse JSON response: %w", err)
 		}
 		return config, nil
 
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		return nil, fmt.Errorf("server returned %d error code", resp.StatusCode)
+		return nil, openapi.ReportError("server returned %d error code", resp.StatusCode)
 	default:
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return nil, openapi.ReportError("unexpected status code: %d", resp.StatusCode)
 	}
 }
 

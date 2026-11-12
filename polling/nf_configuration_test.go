@@ -65,6 +65,8 @@ func waitForPollingCondition(t *testing.T, timeout time.Duration, condition func
 func TestStartPollingService_Success(t *testing.T) {
 	originalFetchPlmnConfig := fetchPlmnConfig
 	originalFactoryConfig := factory.NssfConfig
+	originalInterval := initialPollingInterval
+	initialPollingInterval = 20 * time.Millisecond
 	pollingChan := make(chan []models.PlmnId, 1)
 	var cancel context.CancelFunc
 	var done <-chan struct{}
@@ -72,6 +74,7 @@ func TestStartPollingService_Success(t *testing.T) {
 		waitForPollingServiceStop(t, cancel, done)
 		fetchPlmnConfig = originalFetchPlmnConfig
 		factory.NssfConfig = originalFactoryConfig
+		initialPollingInterval = originalInterval
 	}()
 
 	factory.NssfConfig = factory.Config{
@@ -100,9 +103,9 @@ func TestStartPollingService_Success(t *testing.T) {
 	select {
 	case result := <-pollingChan:
 		if !reflect.DeepEqual(result, expectedPlmn) {
-			t.Errorf("Expected %+v, got %+v", expectedPlmn, result)
+			t.Errorf("expected %+v, got %+v", expectedPlmn, result)
 		}
-	case <-time.After(initialPollingInterval + 200*time.Millisecond):
+	case <-time.After(initialPollingInterval + time.Second):
 		t.Errorf("Timeout waiting for PLMN config")
 	}
 
@@ -117,6 +120,8 @@ func TestStartPollingService_Success(t *testing.T) {
 func TestStartPollingService_RetryAfterFailure(t *testing.T) {
 	originalFetchPlmnConfig := fetchPlmnConfig
 	originalFactoryConfig := factory.NssfConfig
+	originalInterval := initialPollingInterval
+	initialPollingInterval = 20 * time.Millisecond
 	plmnChan := make(chan []models.PlmnId, 1)
 	var cancel context.CancelFunc
 	var done <-chan struct{}
@@ -125,6 +130,7 @@ func TestStartPollingService_RetryAfterFailure(t *testing.T) {
 		waitForPollingServiceStop(t, cancel, done)
 		fetchPlmnConfig = originalFetchPlmnConfig
 		factory.NssfConfig = originalFactoryConfig
+		initialPollingInterval = originalInterval
 	}()
 	factory.NssfConfig = factory.Config{
 		Configuration: &factory.Configuration{
