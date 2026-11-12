@@ -23,11 +23,11 @@ var (
 	keepAliveTimerMutex sync.Mutex
 	registerCtxMutex    sync.Mutex
 	afterFunc           = time.AfterFunc
+	retryTime           = 10 * time.Second
 )
 
 const (
 	defaultHeartbeatTimer int32 = 60
-	retryTime                   = 10 * time.Second
 )
 
 // StartNfRegistrationService starts the registration service. If the new config is empty, the NF
@@ -43,6 +43,9 @@ func StartNfRegistrationService(ctx context.Context, plmnConfigChan <-chan []mod
 			if registerCancel != nil {
 				registerCancel()
 			}
+			keepAliveTimerMutex.Lock()
+			stopKeepAliveTimer()
+			keepAliveTimerMutex.Unlock()
 			logger.NrfRegistrationLog.Infoln("NF registration service shutting down")
 			return
 		case newPlmnConfig, ok := <-plmnConfigChan:
@@ -50,7 +53,10 @@ func StartNfRegistrationService(ctx context.Context, plmnConfigChan <-chan []mod
 				if registerCancel != nil {
 					registerCancel()
 				}
-				logger.NrfRegistrationLog.Infoln("PLMN config channel closed. NSSF registration service exiting")
+				keepAliveTimerMutex.Lock()
+				stopKeepAliveTimer()
+				keepAliveTimerMutex.Unlock()
+				logger.NrfRegistrationLog.Infoln("PLMN config channel closed; stopping NF registration service")
 				return
 			}
 			// Cancel current sync if running
@@ -90,7 +96,7 @@ var registerNF = func(registerCtx context.Context, newPlmnConfig []models.PlmnId
 				continue
 			}
 			logger.NrfRegistrationLog.Infoln("register NSSF instance to NRF with updated profile succeeded")
-			startKeepAliveTimer(nfProfile.GetHeartBeatTimer(), newPlmnConfig)
+			startKeepAliveTimer(getProfileHeartbeatTimer(nfProfile), newPlmnConfig)
 			return
 		}
 	}
@@ -128,7 +134,14 @@ func heartbeatNF(plmnConfig []models.PlmnId) {
 	} else {
 		logger.NrfRegistrationLog.Debugln("NSSF update NF instance (heartbeat) succeeded")
 	}
-	startKeepAliveTimer(nfProfile.GetHeartBeatTimer(), plmnConfig)
+	startKeepAliveTimer(getProfileHeartbeatTimer(nfProfile), plmnConfig)
+}
+
+func getProfileHeartbeatTimer(nfProfile *models.NFProfile) int32 {
+	if nfProfile == nil {
+		return defaultHeartbeatTimer
+	}
+	return nfProfile.GetHeartBeatTimer()
 }
 
 func shouldRegister(problemDetails *models.ProblemDetails, err error) bool {

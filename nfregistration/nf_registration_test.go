@@ -246,12 +246,17 @@ func TestNfRegistrationService_WhenEmptyConfig_ThenContinuesListeningForUpdates(
 
 func TestNfRegistrationService_ConfigChanged_RetryIfRegisterNFFails(t *testing.T) {
 	originalSendRegisterNFInstance := consumer.SendRegisterNFInstance
+	originalRetryTime := retryTime
+	retryTime = 20 * time.Millisecond
 	ch := make(chan []models.PlmnId, 1)
 	cancel, done := startRegistrationServiceForTest(t, ch)
 	defer func() {
 		cancel()
 		<-done
 		consumer.SendRegisterNFInstance = originalSendRegisterNFInstance
+		registerCtxMutex.Lock()
+		retryTime = originalRetryTime
+		registerCtxMutex.Unlock()
 		withKeepAliveTimerLock(func() {
 			stopKeepAliveTimer()
 		})
