@@ -52,65 +52,16 @@ func NSSAIAvailabilityPatchProcedure(nssaiAvailabilityUpdateInfo []models.PatchI
 	*models.AuthorizedNssaiAvailabilityInfo, *models.ProblemDetails,
 ) {
 	response := models.NewAuthorizedNssaiAvailabilityInfoWithDefaults()
-	var amfIdx int
-	var original []byte
-	hitAmf := false
-	factory.ConfigLock.RLock()
-	for amfIdx, amfConfig := range factory.NssfConfig.Configuration.AmfList {
-		if amfConfig.NfId == nfId {
-			// Since json-patch package does not have idea of optional field of datatype,
-			// provide with null or empty value instead of omitting the field
-			var temp []models.SupportedNssaiAvailabilityData
-			configData, err := json.Marshal(factory.NssfConfig.Configuration.AmfList[amfIdx].SupportedNssaiAvailabilityData)
-			if err != nil {
-				factory.ConfigLock.RUnlock()
-				logger.Nssaiavailability.Errorf("marshal error in NSSAIAvailabilityPatchProcedure: %+v", err)
-				return nil, utils.ProblemDetailsSystemFailure(err.Error())
-			}
-			if err = json.Unmarshal(configData, &temp); err != nil {
-				factory.ConfigLock.RUnlock()
-				logger.Nssaiavailability.Errorf("unmarshal error in NSSAIAvailabilityPatchProcedure: %+v", err)
-				return nil, utils.ProblemDetailsSystemFailure(err.Error())
-			}
-			const dummyString string = "DUMMY"
-			for i := range temp {
-				for j := range temp[i].SupportedSnssaiList {
-					if temp[i].SupportedSnssaiList[j].GetSd() == "" {
-						temp[i].SupportedSnssaiList[j].SetSd(dummyString)
-					}
-				}
-			}
-			original, err = json.Marshal(temp)
-			if err != nil {
-				logger.Nssaiavailability.Errorf("marshal error in NSSAIAvailabilityPatchProcedure: %+v", err)
-				factory.ConfigLock.RUnlock()
-				return nil, utils.ProblemDetailsSystemFailure(err.Error())
-			}
-			original = bytes.ReplaceAll(original, []byte(dummyString), []byte(""))
-
-			// original, _ = json.Marshal(factory.NssfConfig.Configuration.AmfList[amfIdx].SupportedNssaiAvailabilityData)
-
-			hitAmf = true
-			break
-		}
-	}
-	factory.ConfigLock.RUnlock()
-	if !hitAmf {
-		problemDetails := utils.ProblemDetails(
-			util.UNSUPPORTED_RESOURCE,
-			http.StatusNotFound,
-			fmt.Sprintf("AMF ID '%s' does not exist", nfId),
-		)
-		return nil, problemDetails
-	}
-
-	// TODO: Check if returned HTTP status codes or problem details are proper when errors occur
 
 	// Provide JSON string with null or empty value in `Value` of `PatchItem`
 	for i, patchItem := range nssaiAvailabilityUpdateInfo {
 		if reflect.ValueOf(patchItem.Value).Kind() == reflect.Map {
-			_, exist := patchItem.Value.(map[string]any)["sst"]
-			_, notExist := patchItem.Value.(map[string]any)["sd"]
+			valueMap, ok := patchItem.Value.(map[string]any)
+			if !ok {
+				continue
+			}
+			_, exist := valueMap["sst"]
+			_, notExist := valueMap["sd"]
 			if exist && !notExist {
 				nssaiAvailabilityUpdateInfo[i].Value.(map[string]any)["sd"] = ""
 			}
@@ -119,6 +70,7 @@ func NSSAIAvailabilityPatchProcedure(nssaiAvailabilityUpdateInfo []models.PatchI
 	patchJSON, err := json.Marshal(nssaiAvailabilityUpdateInfo)
 	if err != nil {
 		logger.Nssaiavailability.Errorf("marshal error in NSSAIAvailabilityPatchProcedure: %+v", err)
+		return nil, utils.ProblemDetailsSystemFailure(err.Error())
 	}
 
 	patch, err := jsonpatch.DecodePatch(patchJSON)
@@ -127,17 +79,72 @@ func NSSAIAvailabilityPatchProcedure(nssaiAvailabilityUpdateInfo []models.PatchI
 		return nil, problemDetails
 	}
 
-	modified, err := patch.Apply(original)
-	if err != nil {
-		problemDetails := utils.ProblemDetails(util.INVALID_REQUEST, http.StatusConflict, err.Error())
-		return nil, problemDetails
-	}
+	// Lookup, patch and write-back happen under a single write lock so that the AMF
+	// index cannot become stale and a failed patch leaves the configuration untouched.
+	problemDetails := func() *models.ProblemDetails {
+		factory.ConfigLock.Lock()
+		defer factory.ConfigLock.Unlock()
 
-	factory.ConfigLock.Lock()
-	err = json.Unmarshal(modified, &factory.NssfConfig.Configuration.AmfList[amfIdx].SupportedNssaiAvailabilityData)
-	factory.ConfigLock.Unlock()
-	if err != nil {
-		problemDetails := utils.ProblemDetails(util.INVALID_REQUEST, http.StatusBadRequest, err.Error())
+		amfIdx := -1
+		for i := range factory.NssfConfig.Configuration.AmfList {
+			if factory.NssfConfig.Configuration.AmfList[i].NfId == nfId {
+				amfIdx = i
+				break
+			}
+		}
+		if amfIdx < 0 {
+			return utils.ProblemDetails(
+				util.UNSUPPORTED_RESOURCE,
+				http.StatusNotFound,
+				fmt.Sprintf("AMF ID '%s' does not exist", nfId),
+			)
+		}
+
+		// Since json-patch package does not have idea of optional field of datatype,
+		// provide with null or empty value instead of omitting the field
+		var (
+			temp                           []models.SupportedNssaiAvailabilityData
+			configData, original, modified []byte
+		)
+		configData, err = json.Marshal(factory.NssfConfig.Configuration.AmfList[amfIdx].SupportedNssaiAvailabilityData)
+		if err != nil {
+			logger.Nssaiavailability.Errorf("marshal error in NSSAIAvailabilityPatchProcedure: %+v", err)
+			return utils.ProblemDetailsSystemFailure(err.Error())
+		}
+		if err = json.Unmarshal(configData, &temp); err != nil {
+			logger.Nssaiavailability.Errorf("unmarshal error in NSSAIAvailabilityPatchProcedure: %+v", err)
+			return utils.ProblemDetailsSystemFailure(err.Error())
+		}
+		const dummyString string = "DUMMY"
+		for i := range temp {
+			for j := range temp[i].SupportedSnssaiList {
+				if temp[i].SupportedSnssaiList[j].GetSd() == "" {
+					temp[i].SupportedSnssaiList[j].SetSd(dummyString)
+				}
+			}
+		}
+		original, err = json.Marshal(temp)
+		if err != nil {
+			logger.Nssaiavailability.Errorf("marshal error in NSSAIAvailabilityPatchProcedure: %+v", err)
+			return utils.ProblemDetailsSystemFailure(err.Error())
+		}
+		original = bytes.ReplaceAll(original, []byte(dummyString), []byte(""))
+
+		// TODO: Check if returned HTTP status codes or problem details are proper when errors occur
+		modified, err = patch.Apply(original)
+		if err != nil {
+			return utils.ProblemDetails(util.INVALID_REQUEST, http.StatusConflict, err.Error())
+		}
+
+		// Decode into a fresh value and commit only on success
+		var updated []models.SupportedNssaiAvailabilityData
+		if err = json.Unmarshal(modified, &updated); err != nil {
+			return utils.ProblemDetails(util.INVALID_REQUEST, http.StatusBadRequest, err.Error())
+		}
+		factory.NssfConfig.Configuration.AmfList[amfIdx].SupportedNssaiAvailabilityData = updated
+		return nil
+	}()
+	if problemDetails != nil {
 		return nil, problemDetails
 	}
 
