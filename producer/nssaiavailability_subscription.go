@@ -37,9 +37,10 @@ func getUnusedSubscriptionIDLocked() (string, error) {
 		}
 		used[uint32(tempID)] = struct{}{}
 	}
-	for idx := uint32(1); idx < math.MaxUint32; idx++ {
-		if _, taken := used[idx]; !taken {
-			return strconv.FormatUint(uint64(idx), 10), nil
+	// Wider counter so that math.MaxUint32 itself is scanned without overflow
+	for idx := uint64(1); idx <= math.MaxUint32; idx++ {
+		if _, taken := used[uint32(idx)]; !taken {
+			return strconv.FormatUint(idx, 10), nil
 		}
 	}
 	return "", fmt.Errorf("no available subscription ID")
