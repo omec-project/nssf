@@ -25,24 +25,25 @@ import (
 )
 
 // Get available subscription ID from configuration
-// In this implementation, string converted from 32-bit integer is used as subscription ID
+// In this implementation, string converted from 32-bit integer is used as subscription ID.
+// The smallest unused positive ID is returned; the order of stored subscriptions is irrelevant.
 func getUnusedSubscriptionIDLocked() (string, error) {
-	var idx uint32 = 1
+	used := make(map[uint32]struct{}, len(factory.NssfConfig.Subscriptions))
 	for _, subscription := range factory.NssfConfig.Subscriptions {
-		tempID, err := strconv.Atoi(subscription.SubscriptionId)
+		tempID, err := strconv.ParseUint(subscription.SubscriptionId, 10, 32)
 		if err != nil {
-			return "", err
+			// Not an ID this allocator could have produced; it cannot collide
+			continue
 		}
-		if uint32(tempID) == idx {
-			if idx == math.MaxUint32 {
-				return "", fmt.Errorf("no available subscription ID")
-			}
-			idx = idx + 1
-		} else {
-			break
+		used[uint32(tempID)] = struct{}{}
+	}
+	// Wider counter so that math.MaxUint32 itself is scanned without overflow
+	for idx := uint64(1); idx <= math.MaxUint32; idx++ {
+		if _, taken := used[uint32(idx)]; !taken {
+			return strconv.FormatUint(idx, 10), nil
 		}
 	}
-	return strconv.Itoa(int(idx)), nil
+	return "", fmt.Errorf("no available subscription ID")
 }
 
 // NSSAIAvailability subscription POST method
