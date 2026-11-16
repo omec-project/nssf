@@ -1,135 +1,70 @@
+// Copyright (C) 2026 Intel Corporation
 // SPDX-FileCopyrightText: 2025 Canonical Ltd
-
 // SPDX-License-Identifier: Apache-2.0
-//
 
 package polling
 
 import (
 	"context"
-	"encoding/json"
-	"io"
-	"net/http"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/omec-project/nssf/factory"
 	"github.com/omec-project/nssf/logger"
-	"github.com/omec-project/openapi/v2"
 	"github.com/omec-project/openapi/v2/models"
 	"github.com/omec-project/openapi/v2/nfConfigApi"
-)
-
-var (
-	initialPollingInterval = 5 * time.Second
-	pollingMaxBackoff      = 40 * time.Second
+	"github.com/omec-project/openapi/v2/nfconfigpoll"
 )
 
 const (
-	pollingBackoffFactor = 2
-	pollingPath          = "/nfconfig/plmn-snssai"
+	initialPollingInterval = 5 * time.Second
+	pollingPath            = "/nfconfig/plmn-snssai"
 )
-
-type nfConfigPoller struct {
-	plmnConfigChan          chan<- []models.PlmnId
-	currentPlmnSnssaiConfig []nfConfigApi.PlmnSnssai
-	currentPlmnConfig       []models.PlmnId
-	client                  *http.Client
-}
 
 // StartPollingService initializes the polling service and starts it. The polling service
 // continuously makes a HTTP GET request to the webconsole and updates the network configuration
 func StartPollingService(ctx context.Context, webuiUri string, plmnConfigChan chan<- []models.PlmnId) {
-	poller := nfConfigPoller{
-		plmnConfigChan:          plmnConfigChan,
-		currentPlmnSnssaiConfig: []nfConfigApi.PlmnSnssai{},
-		currentPlmnConfig:       []models.PlmnId{},
-		client:                  &http.Client{Timeout: initialPollingInterval},
-	}
-	interval := initialPollingInterval
-	pollingEndpoint := webuiUri + pollingPath
-	logger.PollConfigLog.Infof("Started polling service on %s every %v", pollingEndpoint, initialPollingInterval)
-	for {
-		select {
-		case <-ctx.Done():
-			logger.PollConfigLog.Infoln("Polling service shutting down")
-			return
-		case <-time.After(interval):
-			newConfig, err := fetchPlmnConfig(&poller, pollingEndpoint)
-			if err != nil {
-				interval = min(interval*time.Duration(pollingBackoffFactor), pollingMaxBackoff)
-				logger.PollConfigLog.Errorf("Polling error. Retrying in %v: %+v", interval, err)
-				continue
-			}
-			interval = initialPollingInterval
-			poller.handlePolledPlmnSnssaiConfig(newConfig)
-		}
-	}
-}
-
-var fetchPlmnConfig = func(p *nfConfigPoller, endpoint string) ([]nfConfigApi.PlmnSnssai, error) {
-	return p.fetchPlmnConfig(endpoint)
-}
-
-func (p *nfConfigPoller) fetchPlmnConfig(pollingEndpoint string) ([]nfConfigApi.PlmnSnssai, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), initialPollingInterval)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, pollingEndpoint, nil)
+	poller, err := newPoller(webuiUri, plmnConfigChan, initialPollingInterval)
 	if err != nil {
-		return nil, openapi.ReportError("failed to create HTTP request: %w", err)
-	}
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := p.client.Do(req)
-	if err != nil {
-		return nil, openapi.ReportError("HTTP GET %v failed: %w", pollingEndpoint, err)
-	}
-	defer resp.Body.Close()
-
-	contentType := resp.Header.Get("Content-Type")
-	if !strings.Contains(contentType, "application/json") {
-		return nil, openapi.ReportError("unexpected Content-Type: got %s, want application/json", contentType)
-	}
-
-	switch resp.StatusCode {
-	case http.StatusOK:
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, openapi.ReportError("failed to read response body: %w", err)
-		}
-
-		var config []nfConfigApi.PlmnSnssai
-		if err := json.Unmarshal(body, &config); err != nil {
-			return nil, openapi.ReportError("failed to parse JSON response: %w", err)
-		}
-		return config, nil
-
-	case http.StatusBadRequest, http.StatusInternalServerError:
-		return nil, openapi.ReportError("server returned %d error code", resp.StatusCode)
-	default:
-		return nil, openapi.ReportError("unexpected status code: %d", resp.StatusCode)
-	}
-}
-
-func (p *nfConfigPoller) handlePolledPlmnSnssaiConfig(newPlmnSnssaiConfig []nfConfigApi.PlmnSnssai) {
-	if reflect.DeepEqual(p.currentPlmnSnssaiConfig, newPlmnSnssaiConfig) {
-		logger.PollConfigLog.Debugf("PLMN-SNSSAI config did not change %+v", p.currentPlmnSnssaiConfig)
+		logger.PollConfigLog.Errorf("failed to start polling service: %v", err)
 		return
 	}
+	poller.Run(ctx)
+}
+
+func newPoller(webuiUri string, plmnConfigChan chan<- []models.PlmnId, interval time.Duration) (*nfconfigpoll.Poller[[]nfConfigApi.PlmnSnssai], error) {
+	handler := &plmnSnssaiHandler{plmnConfigChan: plmnConfigChan, currentPlmnConfig: []models.PlmnId{}}
+	return nfconfigpoll.New(nfconfigpoll.Config[[]nfConfigApi.PlmnSnssai]{
+		Name:     "PLMN-SNSSAI",
+		Endpoint: webuiUri + pollingPath,
+		Log:      logger.PollConfigLog,
+		Interval: interval,
+		Initial:  []nfConfigApi.PlmnSnssai{},
+		OnChange: handler.handlePolledPlmnSnssaiConfig,
+	})
+}
+
+// plmnSnssaiHandler applies a changed PLMN-SNSSAI config: it updates the supported NSSAI in the
+// factory config and sends the PLMN list to the NF registration only when the PLMN list changed.
+type plmnSnssaiHandler struct {
+	plmnConfigChan    chan<- []models.PlmnId
+	currentPlmnConfig []models.PlmnId
+}
+
+func (h *plmnSnssaiHandler) handlePolledPlmnSnssaiConfig(ctx context.Context, newPlmnSnssaiConfig []nfConfigApi.PlmnSnssai) error {
 	factory.ConfigLock.Lock()
 	defer factory.ConfigLock.Unlock()
-	p.currentPlmnSnssaiConfig = newPlmnSnssaiConfig
-	logger.PollConfigLog.Infof("PLMN-SNSSAI config changed. New PLMN-SNSSAI config: %+v", p.currentPlmnSnssaiConfig)
-	newPlmnConfig, newSupportedNssai := convertPlmnSnssaiList(p.currentPlmnSnssaiConfig)
+	newPlmnConfig, newSupportedNssai := convertPlmnSnssaiList(newPlmnSnssaiConfig)
 
-	if !reflect.DeepEqual(p.currentPlmnConfig, newPlmnConfig) {
+	if !reflect.DeepEqual(h.currentPlmnConfig, newPlmnConfig) {
 		logger.PollConfigLog.Debugf("PLMN config changed %+v. Updating NF registration", newPlmnConfig)
-		p.currentPlmnConfig = newPlmnConfig
-		p.plmnConfigChan <- p.currentPlmnConfig
+		if err := nfconfigpoll.Send(ctx, h.plmnConfigChan, newPlmnConfig); err != nil {
+			return err
+		}
+		h.currentPlmnConfig = newPlmnConfig
 	}
 	factory.NssfConfig.Configuration.SupportedNssaiInPlmnList = newSupportedNssai
+	return nil
 }
 
 func convertPlmnSnssaiList(newConfig []nfConfigApi.PlmnSnssai) ([]models.PlmnId, factory.SupportedNssaiInPlmn) {

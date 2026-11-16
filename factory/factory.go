@@ -1,26 +1,16 @@
+// Copyright (C) 2026 Intel Corporation
 // SPDX-FileCopyrightText: 2021 Open Networking Foundation <info@opennetworking.org>
 // Copyright 2019 free5GC.org
-//
 // SPDX-License-Identifier: Apache-2.0
-//
-
-/*
- * NSSF Configuration Factory
- */
 
 package factory
 
 import (
-	"fmt"
-	"net/url"
-	"os"
 	"sync"
 
 	"github.com/omec-project/nssf/logger"
-	"go.yaml.in/yaml/v4"
+	"github.com/omec-project/util/nfconfig"
 )
-
-const defaultWebuiUri = "http://webui:5001"
 
 var (
 	NssfConfig Config
@@ -34,48 +24,19 @@ func init() {
 
 // TODO: Support configuration update from REST api
 func InitConfigFactory(f string) error {
-	content, err := os.ReadFile(f)
+	NssfConfig = Config{}
+
+	if err := nfconfig.LoadYAML(f, &NssfConfig); err != nil {
+		return err
+	}
+	webuiUri, err := nfconfig.ResolveWebuiUri(NssfConfig.Configuration.WebuiUri, logger.CfgLog)
 	if err != nil {
 		return err
 	}
-	NssfConfig = Config{}
-
-	if err = yaml.Unmarshal(content, &NssfConfig); err != nil {
-		return err
-	}
-
-	if NssfConfig.Configuration.WebuiUri == "" {
-		NssfConfig.Configuration.WebuiUri = defaultWebuiUri
-		logger.CfgLog.Infof("webuiUri not set in configuration file. Using %v", NssfConfig.Configuration.WebuiUri)
-		return nil
-	}
-	err = validateWebuiUri(NssfConfig.Configuration.WebuiUri)
-	return err
+	NssfConfig.Configuration.WebuiUri = webuiUri
+	return nil
 }
 
 func CheckConfigVersion() error {
-	currentVersion := NssfConfig.GetVersion()
-
-	if currentVersion != NSSF_EXPECTED_CONFIG_VERSION {
-		return fmt.Errorf("config version is [%s], but expected is [%s]",
-			currentVersion, NSSF_EXPECTED_CONFIG_VERSION)
-	}
-
-	logger.CfgLog.Infof("config version [%s]", currentVersion)
-
-	return nil
-}
-
-func validateWebuiUri(uri string) error {
-	parsedUrl, err := url.ParseRequestURI(uri)
-	if err != nil {
-		return err
-	}
-	if parsedUrl.Scheme != "http" && parsedUrl.Scheme != "https" {
-		return fmt.Errorf("unsupported scheme for webuiUri: %s", parsedUrl.Scheme)
-	}
-	if parsedUrl.Hostname() == "" {
-		return fmt.Errorf("missing host in webuiUri")
-	}
-	return nil
+	return nfconfig.CheckVersion(NssfConfig.GetVersion(), NSSF_EXPECTED_CONFIG_VERSION, logger.CfgLog)
 }
