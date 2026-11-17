@@ -1,13 +1,13 @@
 module github.com/omec-project/nssf
 
-go 1.27.0
+go 1.27.4
 
 require (
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/gin-gonic/gin v1.12.0
 	github.com/google/uuid v1.6.0
-	github.com/omec-project/openapi/v2 v2.5.0
-	github.com/omec-project/util v1.10.1
+	github.com/omec-project/openapi/v2 v2.5.1
+	github.com/omec-project/util v1.10.2
 	github.com/prometheus/client_golang v1.25.0
 	github.com/urfave/cli/v3 v3.14.0
 	go.uber.org/zap v1.28.0
@@ -48,7 +48,7 @@ require (
 	go.yaml.in/yaml/v4 v4.0.0 // indirect
 	golang.org/x/arch v0.33.0 // indirect
 	golang.org/x/crypto v0.59.0 // indirect
-	golang.org/x/net v0.62.0 // indirect
+	golang.org/x/net v0.63.0 // indirect
 	golang.org/x/oauth2 v0.38.0 // indirect
 	golang.org/x/sys v0.50.0 // indirect
 	golang.org/x/text v0.44.0 // indirect
